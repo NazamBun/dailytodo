@@ -25,7 +25,7 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 7: Trier (date ou titre)
+ * Etape 8: Recherche
  */
 @Composable
 fun TodoListScreen(
@@ -53,6 +53,11 @@ fun TodoListScreen(
         SortRow(
             selected = state.sort,
             onSelected = viewModel::onSortSelected
+        )
+
+        SearchBar(
+            query = state.query,
+            onQueryChanged = viewModel::onQueryChanged
         )
 
         TodoInputSection(
@@ -109,6 +114,20 @@ private fun SortRow(
         SortButton("Date", selected == TodoSort.DATE) { onSelected(TodoSort.DATE) }
         SortButton("Titre", selected == TodoSort.TITLE) { onSelected(TodoSort.TITLE) }
     }
+}
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChanged: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChanged,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text("Rechercher…") }
+    )
 }
 
 @Composable

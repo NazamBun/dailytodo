@@ -12,8 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 7: Trier (date ou titre)
- * - Le tri s'applique après le filtre.
+ * Etape 8: Recherche
+ * - Champ de recherche qui filtre par titre
+ * - Ordre: filtre -> recherche -> tri
  */
 class TodoListViewModel : ViewModel() {
 
@@ -27,7 +28,8 @@ class TodoListViewModel : ViewModel() {
                 TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false),
             ),
             filter = TodoFilter.ALL,
-            sort = TodoSort.DATE
+            sort = TodoSort.DATE,
+            query = ""
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
@@ -43,6 +45,10 @@ class TodoListViewModel : ViewModel() {
                 inputError = null
             )
         )
+    }
+
+    fun onQueryChanged(newQuery: String) {
+        updateState(_uiState.value.copy(query = newQuery))
     }
 
     fun onTodoClicked(id: String) {
@@ -148,9 +154,16 @@ class TodoListViewModel : ViewModel() {
             TodoFilter.DONE -> state.items.filter { it.isDone }
         }
 
+        val query = state.query.trim().lowercase()
+        val searched = if (query.isBlank()) {
+            filtered
+        } else {
+            filtered.filter { it.title.lowercase().contains(query) }
+        }
+
         val sorted = when (state.sort) {
-            TodoSort.DATE -> filtered.sortedByDescending { it.id.toLongOrNull() ?: 0L }
-            TodoSort.TITLE -> filtered.sortedBy { it.title.lowercase() }
+            TodoSort.DATE -> searched.sortedByDescending { it.id.toLongOrNull() ?: 0L }
+            TodoSort.TITLE -> searched.sortedBy { it.title.lowercase() }
         }
 
         _uiState.value = state.copy(visibleItems = sorted)
