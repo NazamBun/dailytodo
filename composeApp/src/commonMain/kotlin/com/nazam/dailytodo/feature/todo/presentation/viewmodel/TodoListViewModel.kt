@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoListUiState
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,8 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 6: Filtrer
- * - ALL / IN_PROGRESS / DONE
+ * Etape 7: Trier (date ou titre)
+ * - Le tri s'applique après le filtre.
  */
 class TodoListViewModel : ViewModel() {
 
@@ -25,13 +26,13 @@ class TodoListViewModel : ViewModel() {
                 TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true),
                 TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false),
             ),
-            filter = TodoFilter.ALL
+            filter = TodoFilter.ALL,
+            sort = TodoSort.DATE
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
 
     init {
-        // Calcul initial de visibleItems
         updateState(_uiState.value)
     }
 
@@ -105,6 +106,10 @@ class TodoListViewModel : ViewModel() {
         updateState(_uiState.value.copy(filter = filter))
     }
 
+    fun onSortSelected(sort: TodoSort) {
+        updateState(_uiState.value.copy(sort = sort))
+    }
+
     private fun addTodo(title: String) {
         val newItem = TodoItemUi(
             id = generateId(),
@@ -137,12 +142,18 @@ class TodoListViewModel : ViewModel() {
     }
 
     private fun updateState(state: TodoListUiState) {
-        val visible = when (state.filter) {
+        val filtered = when (state.filter) {
             TodoFilter.ALL -> state.items
             TodoFilter.IN_PROGRESS -> state.items.filter { !it.isDone }
             TodoFilter.DONE -> state.items.filter { it.isDone }
         }
-        _uiState.value = state.copy(visibleItems = visible)
+
+        val sorted = when (state.sort) {
+            TodoSort.DATE -> filtered.sortedByDescending { it.id.toLongOrNull() ?: 0L }
+            TodoSort.TITLE -> filtered.sortedBy { it.title.lowercase() }
+        }
+
+        _uiState.value = state.copy(visibleItems = sorted)
     }
 
     private fun generateId(): String {

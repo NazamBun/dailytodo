@@ -21,10 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 6: Filtrer (toutes / en cours / terminées)
+ * Etape 7: Trier (date ou titre)
  */
 @Composable
 fun TodoListScreen(
@@ -47,6 +48,11 @@ fun TodoListScreen(
         FilterRow(
             selected = state.filter,
             onSelected = viewModel::onFilterSelected
+        )
+
+        SortRow(
+            selected = state.sort,
+            onSelected = viewModel::onSortSelected
         )
 
         TodoInputSection(
@@ -85,26 +91,39 @@ private fun FilterRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterButton(
-            text = "Toutes",
-            isSelected = selected == TodoFilter.ALL,
-            onClick = { onSelected(TodoFilter.ALL) }
-        )
-        FilterButton(
-            text = "En cours",
-            isSelected = selected == TodoFilter.IN_PROGRESS,
-            onClick = { onSelected(TodoFilter.IN_PROGRESS) }
-        )
-        FilterButton(
-            text = "Terminées",
-            isSelected = selected == TodoFilter.DONE,
-            onClick = { onSelected(TodoFilter.DONE) }
-        )
+        FilterButton("Toutes", selected == TodoFilter.ALL) { onSelected(TodoFilter.ALL) }
+        FilterButton("En cours", selected == TodoFilter.IN_PROGRESS) { onSelected(TodoFilter.IN_PROGRESS) }
+        FilterButton("Terminées", selected == TodoFilter.DONE) { onSelected(TodoFilter.DONE) }
+    }
+}
+
+@Composable
+private fun SortRow(
+    selected: TodoSort,
+    onSelected: (TodoSort) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SortButton("Date", selected == TodoSort.DATE) { onSelected(TodoSort.DATE) }
+        SortButton("Titre", selected == TodoSort.TITLE) { onSelected(TodoSort.TITLE) }
     }
 }
 
 @Composable
 private fun FilterButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Button(onClick = onClick) {
+        Text(text = if (isSelected) "✓ $text" else text)
+    }
+}
+
+@Composable
+private fun SortButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit

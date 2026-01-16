@@ -6,12 +6,13 @@ package com.nazam.dailytodo.feature.todo.presentation.model
 data class TodoListUiState(
     val items: List<TodoItemUi> = emptyList(),
 
-    // Liste affichée après filtre
+    // Liste affichée après filtre + tri
     val visibleItems: List<TodoItemUi> = emptyList(),
 
     val inputTitle: String = "",
     val inputError: String? = null,
     val editingId: String? = null,
 
-    val filter: TodoFilter = TodoFilter.ALL
+    val filter: TodoFilter = TodoFilter.ALL,
+    val sort: TodoSort = TodoSort.DATE
 )
