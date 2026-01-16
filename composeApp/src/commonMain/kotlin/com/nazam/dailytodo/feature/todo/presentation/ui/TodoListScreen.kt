@@ -23,10 +23,9 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 3: Modifier
- * - Taper sur une tâche => édition
- * - Bouton devient "Enregistrer"
- * - Bouton "Annuler" pendant l'édition
+ * Etape 4: Terminer / dé-terminer
+ * - Checkbox active (toggle)
+ * - Le clic sur la ligne sert toujours à modifier
  */
 @Composable
 fun TodoListScreen(
@@ -64,7 +63,8 @@ fun TodoListScreen(
             ) { item ->
                 TodoRow(
                     item = item,
-                    onClick = { viewModel.onTodoClicked(item.id) }
+                    onRowClick = { viewModel.onTodoClicked(item.id) },
+                    onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) }
                 )
             }
         }
@@ -118,17 +118,18 @@ private fun TodoInputSection(
 @Composable
 private fun TodoRow(
     item: TodoItemUi,
-    onClick: () -> Unit
+    onRowClick: () -> Unit,
+    onDoneChanged: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onRowClick),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Checkbox(
             checked = item.isDone,
-            onCheckedChange = null // Etape 4 plus tard
+            onCheckedChange = onDoneChanged
         )
         Text(
             text = item.title,

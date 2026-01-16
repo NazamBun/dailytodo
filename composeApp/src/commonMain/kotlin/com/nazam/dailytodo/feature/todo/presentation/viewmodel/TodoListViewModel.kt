@@ -10,9 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 3: Modifier
- * - Cliquer sur une tâche => mode édition
- * - Bouton "Enregistrer" => met à jour le titre
+ * Etape 4: Terminer / dé-terminer
+ * - Checkbox cliquable => isDone true/false
+ *
+ * On garde aussi:
+ * - Ajouter
+ * - Modifier
  */
 class TodoListViewModel : ViewModel() {
 
@@ -66,6 +69,13 @@ class TodoListViewModel : ViewModel() {
             inputTitle = "",
             inputError = null
         )
+    }
+
+    fun onDoneToggled(id: String, isDone: Boolean) {
+        val updated = _uiState.value.items.map { item ->
+            if (item.id == id) item.copy(isDone = isDone) else item
+        }
+        _uiState.value = _uiState.value.copy(items = updated)
     }
 
     private fun addTodo(title: String) {
