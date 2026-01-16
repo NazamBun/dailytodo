@@ -1,6 +1,7 @@
 package com.nazam.dailytodo.feature.todo.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.nazam.dailytodo.core.time.nowMillis
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
@@ -13,9 +14,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 9: Catégories
- * - Chaque tâche a une catégorie
- * - L'ajout / l'édition permet de choisir la catégorie
+ * Etape 10: Date limite + alerte "en retard"
+ * - Une tâche peut avoir une date limite (millis)
+ * - Si date < maintenant et tâche pas faite => EN RETARD
  */
 class TodoListViewModel : ViewModel() {
 
@@ -24,14 +25,10 @@ class TodoListViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
         TodoListUiState(
             items = listOf(
-                TodoItemUi(id = "1", title = "Acheter du lait", isDone = false, category = TodoCategory.PERSONAL),
-                TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true, category = TodoCategory.SPORT),
-                TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false, category = TodoCategory.WORK),
-            ),
-            filter = TodoFilter.ALL,
-            sort = TodoSort.DATE,
-            query = "",
-            selectedCategory = TodoCategory.PERSONAL
+                TodoItemUi(id = "1", title = "Acheter du lait", isDone = false, category = TodoCategory.PERSONAL, dueDateMillis = null),
+                TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true, category = TodoCategory.SPORT, dueDateMillis = null),
+                TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false, category = TodoCategory.WORK, dueDateMillis = null),
+            )
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
@@ -41,12 +38,7 @@ class TodoListViewModel : ViewModel() {
     }
 
     fun onTitleChanged(newTitle: String) {
-        updateState(
-            _uiState.value.copy(
-                inputTitle = newTitle,
-                inputError = null
-            )
-        )
+        updateState(_uiState.value.copy(inputTitle = newTitle, inputError = null))
     }
 
     fun onQueryChanged(newQuery: String) {
@@ -57,6 +49,15 @@ class TodoListViewModel : ViewModel() {
         updateState(_uiState.value.copy(selectedCategory = category))
     }
 
+    fun onDueDateAddDays(days: Int) {
+        val due = nowMillis() + days.toMillisDays()
+        updateState(_uiState.value.copy(inputDueDateMillis = due))
+    }
+
+    fun onDueDateCleared() {
+        updateState(_uiState.value.copy(inputDueDateMillis = null))
+    }
+
     fun onTodoClicked(id: String) {
         val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
         updateState(
@@ -64,6 +65,7 @@ class TodoListViewModel : ViewModel() {
                 editingId = id,
                 inputTitle = item.title,
                 selectedCategory = item.category,
+                inputDueDateMillis = item.dueDateMillis,
                 inputError = null
             )
         )
@@ -77,11 +79,7 @@ class TodoListViewModel : ViewModel() {
         }
 
         val editingId = _uiState.value.editingId
-        if (editingId == null) {
-            addTodo(title)
-        } else {
-            updateTodo(editingId, title)
-        }
+        if (editingId == null) addTodo(title) else updateTodo(editingId, title)
     }
 
     fun onCancelEditClicked() {
@@ -90,7 +88,8 @@ class TodoListViewModel : ViewModel() {
                 editingId = null,
                 inputTitle = "",
                 inputError = null,
-                selectedCategory = TodoCategory.PERSONAL
+                selectedCategory = TodoCategory.PERSONAL,
+                inputDueDateMillis = null
             )
         )
     }
@@ -112,7 +111,8 @@ class TodoListViewModel : ViewModel() {
                 editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
                 inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
                 inputError = if (shouldCancelEdit) null else _uiState.value.inputError,
-                selectedCategory = if (shouldCancelEdit) TodoCategory.PERSONAL else _uiState.value.selectedCategory
+                selectedCategory = if (shouldCancelEdit) TodoCategory.PERSONAL else _uiState.value.selectedCategory,
+                inputDueDateMillis = if (shouldCancelEdit) null else _uiState.value.inputDueDateMillis
             )
         )
     }
@@ -130,7 +130,8 @@ class TodoListViewModel : ViewModel() {
             id = generateId(),
             title = title,
             isDone = false,
-            category = _uiState.value.selectedCategory
+            category = _uiState.value.selectedCategory,
+            dueDateMillis = _uiState.value.inputDueDateMillis
         )
 
         updateState(
@@ -138,16 +139,18 @@ class TodoListViewModel : ViewModel() {
                 items = listOf(newItem) + _uiState.value.items,
                 inputTitle = "",
                 inputError = null,
-                selectedCategory = TodoCategory.PERSONAL
+                selectedCategory = TodoCategory.PERSONAL,
+                inputDueDateMillis = null
             )
         )
     }
 
     private fun updateTodo(id: String, newTitle: String) {
         val newCategory = _uiState.value.selectedCategory
+        val newDue = _uiState.value.inputDueDateMillis
 
         val updated = _uiState.value.items.map { item ->
-            if (item.id == id) item.copy(title = newTitle, category = newCategory) else item
+            if (item.id == id) item.copy(title = newTitle, category = newCategory, dueDateMillis = newDue) else item
         }
 
         updateState(
@@ -156,7 +159,8 @@ class TodoListViewModel : ViewModel() {
                 editingId = null,
                 inputTitle = "",
                 inputError = null,
-                selectedCategory = TodoCategory.PERSONAL
+                selectedCategory = TodoCategory.PERSONAL,
+                inputDueDateMillis = null
             )
         )
     }
@@ -169,11 +173,7 @@ class TodoListViewModel : ViewModel() {
         }
 
         val query = state.query.trim().lowercase()
-        val searched = if (query.isBlank()) {
-            filtered
-        } else {
-            filtered.filter { it.title.lowercase().contains(query) }
-        }
+        val searched = if (query.isBlank()) filtered else filtered.filter { it.title.lowercase().contains(query) }
 
         val sorted = when (state.sort) {
             TodoSort.DATE -> searched.sortedByDescending { it.id.toLongOrNull() ?: 0L }
@@ -188,4 +188,6 @@ class TodoListViewModel : ViewModel() {
         nextId += 1
         return id.toString()
     }
+
+    private fun Int.toMillisDays(): Long = this.toLong() * 24L * 60L * 60L * 1000L
 }

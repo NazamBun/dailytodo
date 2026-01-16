@@ -17,6 +17,9 @@ data class TodoListUiState(
     // Catégorie choisie pour l'ajout / édition
     val selectedCategory: TodoCategory = TodoCategory.PERSONAL,
 
+    // Date limite choisie pour l'ajout / édition
+    val inputDueDateMillis: Long? = null,
+
     // Filtre + tri
     val filter: TodoFilter = TodoFilter.ALL,
     val sort: TodoSort = TodoSort.DATE,
