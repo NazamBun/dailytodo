@@ -19,12 +19,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 5: Supprimer
- * - Bouton "Suppr." sur chaque tâche
+ * Etape 6: Filtrer (toutes / en cours / terminées)
  */
 @Composable
 fun TodoListScreen(
@@ -44,6 +44,11 @@ fun TodoListScreen(
             style = MaterialTheme.typography.headlineSmall
         )
 
+        FilterRow(
+            selected = state.filter,
+            onSelected = viewModel::onFilterSelected
+        )
+
         TodoInputSection(
             title = state.inputTitle,
             error = state.inputError,
@@ -57,7 +62,7 @@ fun TodoListScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(
-                items = state.items,
+                items = state.visibleItems,
                 key = { it.id }
             ) { item ->
                 TodoRow(
@@ -68,6 +73,44 @@ fun TodoListScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FilterRow(
+    selected: TodoFilter,
+    onSelected: (TodoFilter) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterButton(
+            text = "Toutes",
+            isSelected = selected == TodoFilter.ALL,
+            onClick = { onSelected(TodoFilter.ALL) }
+        )
+        FilterButton(
+            text = "En cours",
+            isSelected = selected == TodoFilter.IN_PROGRESS,
+            onClick = { onSelected(TodoFilter.IN_PROGRESS) }
+        )
+        FilterButton(
+            text = "Terminées",
+            isSelected = selected == TodoFilter.DONE,
+            onClick = { onSelected(TodoFilter.DONE) }
+        )
+    }
+}
+
+@Composable
+private fun FilterButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Button(onClick = onClick) {
+        Text(text = if (isSelected) "✓ $text" else text)
     }
 }
 

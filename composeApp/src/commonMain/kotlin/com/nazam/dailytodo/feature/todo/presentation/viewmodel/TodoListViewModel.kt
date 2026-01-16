@@ -1,6 +1,7 @@
 package com.nazam.dailytodo.feature.todo.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoListUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,9 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 5: Supprimer
- * - Supprimer une tâche par id
- * - Si la tâche supprimée est en édition => on sort du mode édition
+ * Etape 6: Filtrer
+ * - ALL / IN_PROGRESS / DONE
  */
 class TodoListViewModel : ViewModel() {
 
@@ -24,31 +24,41 @@ class TodoListViewModel : ViewModel() {
                 TodoItemUi(id = "1", title = "Acheter du lait", isDone = false),
                 TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true),
                 TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false),
-            )
+            ),
+            filter = TodoFilter.ALL
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
 
+    init {
+        // Calcul initial de visibleItems
+        updateState(_uiState.value)
+    }
+
     fun onTitleChanged(newTitle: String) {
-        _uiState.value = _uiState.value.copy(
-            inputTitle = newTitle,
-            inputError = null
+        updateState(
+            _uiState.value.copy(
+                inputTitle = newTitle,
+                inputError = null
+            )
         )
     }
 
     fun onTodoClicked(id: String) {
         val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
-        _uiState.value = _uiState.value.copy(
-            editingId = id,
-            inputTitle = item.title,
-            inputError = null
+        updateState(
+            _uiState.value.copy(
+                editingId = id,
+                inputTitle = item.title,
+                inputError = null
+            )
         )
     }
 
     fun onPrimaryActionClicked() {
         val title = _uiState.value.inputTitle.trim()
         if (title.isBlank()) {
-            _uiState.value = _uiState.value.copy(inputError = "Le titre est obligatoire")
+            updateState(_uiState.value.copy(inputError = "Le titre est obligatoire"))
             return
         }
 
@@ -61,10 +71,12 @@ class TodoListViewModel : ViewModel() {
     }
 
     fun onCancelEditClicked() {
-        _uiState.value = _uiState.value.copy(
-            editingId = null,
-            inputTitle = "",
-            inputError = null
+        updateState(
+            _uiState.value.copy(
+                editingId = null,
+                inputTitle = "",
+                inputError = null
+            )
         )
     }
 
@@ -72,19 +84,25 @@ class TodoListViewModel : ViewModel() {
         val updated = _uiState.value.items.map { item ->
             if (item.id == id) item.copy(isDone = isDone) else item
         }
-        _uiState.value = _uiState.value.copy(items = updated)
+        updateState(_uiState.value.copy(items = updated))
     }
 
     fun onDeleteClicked(id: String) {
         val newItems = _uiState.value.items.filterNot { it.id == id }
-
         val shouldCancelEdit = _uiState.value.editingId == id
-        _uiState.value = _uiState.value.copy(
-            items = newItems,
-            editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
-            inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
-            inputError = if (shouldCancelEdit) null else _uiState.value.inputError
+
+        updateState(
+            _uiState.value.copy(
+                items = newItems,
+                editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
+                inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
+                inputError = if (shouldCancelEdit) null else _uiState.value.inputError
+            )
         )
+    }
+
+    fun onFilterSelected(filter: TodoFilter) {
+        updateState(_uiState.value.copy(filter = filter))
     }
 
     private fun addTodo(title: String) {
@@ -94,10 +112,12 @@ class TodoListViewModel : ViewModel() {
             isDone = false
         )
 
-        _uiState.value = _uiState.value.copy(
-            items = listOf(newItem) + _uiState.value.items,
-            inputTitle = "",
-            inputError = null
+        updateState(
+            _uiState.value.copy(
+                items = listOf(newItem) + _uiState.value.items,
+                inputTitle = "",
+                inputError = null
+            )
         )
     }
 
@@ -106,12 +126,23 @@ class TodoListViewModel : ViewModel() {
             if (item.id == id) item.copy(title = newTitle) else item
         }
 
-        _uiState.value = _uiState.value.copy(
-            items = updated,
-            editingId = null,
-            inputTitle = "",
-            inputError = null
+        updateState(
+            _uiState.value.copy(
+                items = updated,
+                editingId = null,
+                inputTitle = "",
+                inputError = null
+            )
         )
+    }
+
+    private fun updateState(state: TodoListUiState) {
+        val visible = when (state.filter) {
+            TodoFilter.ALL -> state.items
+            TodoFilter.IN_PROGRESS -> state.items.filter { !it.isDone }
+            TodoFilter.DONE -> state.items.filter { it.isDone }
+        }
+        _uiState.value = state.copy(visibleItems = visible)
     }
 
     private fun generateId(): String {
