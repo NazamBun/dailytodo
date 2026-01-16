@@ -23,9 +23,8 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 4: Terminer / dé-terminer
- * - Checkbox active (toggle)
- * - Le clic sur la ligne sert toujours à modifier
+ * Etape 5: Supprimer
+ * - Bouton "Suppr." sur chaque tâche
  */
 @Composable
 fun TodoListScreen(
@@ -64,7 +63,8 @@ fun TodoListScreen(
                 TodoRow(
                     item = item,
                     onRowClick = { viewModel.onTodoClicked(item.id) },
-                    onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) }
+                    onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) },
+                    onDeleteClick = { viewModel.onDeleteClicked(item.id) }
                 )
             }
         }
@@ -119,7 +119,8 @@ private fun TodoInputSection(
 private fun TodoRow(
     item: TodoItemUi,
     onRowClick: () -> Unit,
-    onDoneChanged: (Boolean) -> Unit
+    onDoneChanged: (Boolean) -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -131,9 +132,15 @@ private fun TodoRow(
             checked = item.isDone,
             onCheckedChange = onDoneChanged
         )
+
         Text(
             text = item.title,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
         )
+
+        Button(onClick = onDeleteClick) {
+            Text("Suppr.")
+        }
     }
 }

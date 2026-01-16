@@ -10,12 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 4: Terminer / dé-terminer
- * - Checkbox cliquable => isDone true/false
- *
- * On garde aussi:
- * - Ajouter
- * - Modifier
+ * Etape 5: Supprimer
+ * - Supprimer une tâche par id
+ * - Si la tâche supprimée est en édition => on sort du mode édition
  */
 class TodoListViewModel : ViewModel() {
 
@@ -76,6 +73,18 @@ class TodoListViewModel : ViewModel() {
             if (item.id == id) item.copy(isDone = isDone) else item
         }
         _uiState.value = _uiState.value.copy(items = updated)
+    }
+
+    fun onDeleteClicked(id: String) {
+        val newItems = _uiState.value.items.filterNot { it.id == id }
+
+        val shouldCancelEdit = _uiState.value.editingId == id
+        _uiState.value = _uiState.value.copy(
+            items = newItems,
+            editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
+            inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
+            inputError = if (shouldCancelEdit) null else _uiState.value.inputError
+        )
     }
 
     private fun addTodo(title: String) {
