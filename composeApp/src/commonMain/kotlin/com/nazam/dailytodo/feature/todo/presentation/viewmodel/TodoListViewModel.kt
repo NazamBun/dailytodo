@@ -10,11 +10,18 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Pour l'instant:
- * - On garde une liste en mémoire (fake data) juste pour afficher.
- * - Plus tard, on branchera la vraie donnée (UseCase + Repository + SQLDelight).
+ * Etape 2: Ajouter
+ * - On gère le texte saisi
+ * - On ajoute une tâche en mémoire
+ *
+ * Note:
+ * - L'id est généré via un compteur (simple et KMP friendly).
+ * - Plus tard, la DB (SQLDelight) donnera un vrai id.
  */
 class TodoListViewModel : ViewModel() {
+
+    // Compteur d'id simple (KMP friendly)
+    private var nextId: Long = 4L
 
     private val _uiState = MutableStateFlow(
         TodoListUiState(
@@ -26,4 +33,40 @@ class TodoListViewModel : ViewModel() {
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
+
+    fun onTitleChanged(newTitle: String) {
+        _uiState.value = _uiState.value.copy(
+            inputTitle = newTitle,
+            inputError = null
+        )
+    }
+
+    fun onAddClicked() {
+        val title = _uiState.value.inputTitle.trim()
+
+        if (title.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                inputError = "Le titre est obligatoire"
+            )
+            return
+        }
+
+        val newItem = TodoItemUi(
+            id = generateId(),
+            title = title,
+            isDone = false
+        )
+
+        _uiState.value = _uiState.value.copy(
+            items = listOf(newItem) + _uiState.value.items,
+            inputTitle = "",
+            inputError = null
+        )
+    }
+
+    private fun generateId(): String {
+        val id = nextId
+        nextId += 1
+        return id.toString()
+    }
 }
