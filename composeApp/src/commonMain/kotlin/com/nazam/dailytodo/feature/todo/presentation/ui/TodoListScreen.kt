@@ -1,5 +1,6 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,20 +19,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 2: Ajouter
- *
- * - Champ texte + bouton
- * - Affichage erreur si le titre est vide
- * - Liste en dessous
+ * Etape 3: Modifier
+ * - Taper sur une tâche => édition
+ * - Bouton devient "Enregistrer"
+ * - Bouton "Annuler" pendant l'édition
  */
 @Composable
 fun TodoListScreen(
     viewModel: TodoListViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+    val isEditing = state.editingId != null
 
     Column(
         modifier = Modifier
@@ -44,11 +46,13 @@ fun TodoListScreen(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        AddTodoSection(
+        TodoInputSection(
             title = state.inputTitle,
             error = state.inputError,
+            isEditing = isEditing,
             onTitleChanged = viewModel::onTitleChanged,
-            onAddClicked = viewModel::onAddClicked
+            onPrimaryActionClicked = viewModel::onPrimaryActionClicked,
+            onCancelEditClicked = viewModel::onCancelEditClicked
         )
 
         LazyColumn(
@@ -59,8 +63,8 @@ fun TodoListScreen(
                 key = { it.id }
             ) { item ->
                 TodoRow(
-                    title = item.title,
-                    isDone = item.isDone
+                    item = item,
+                    onClick = { viewModel.onTodoClicked(item.id) }
                 )
             }
         }
@@ -68,15 +72,16 @@ fun TodoListScreen(
 }
 
 @Composable
-private fun AddTodoSection(
+private fun TodoInputSection(
     title: String,
     error: String?,
+    isEditing: Boolean,
     onTitleChanged: (String) -> Unit,
-    onAddClicked: () -> Unit
+    onPrimaryActionClicked: () -> Unit,
+    onCancelEditClicked: () -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -86,12 +91,17 @@ private fun AddTodoSection(
                 onValueChange = onTitleChanged,
                 modifier = Modifier.weight(1f),
                 singleLine = true,
-                label = { Text("Nouvelle tâche") }
+                label = { Text(if (isEditing) "Modifier la tâche" else "Nouvelle tâche") }
             )
-            Button(
-                onClick = onAddClicked
-            ) {
-                Text("Ajouter")
+
+            Button(onClick = onPrimaryActionClicked) {
+                Text(if (isEditing) "Enregistrer" else "Ajouter")
+            }
+
+            if (isEditing) {
+                Button(onClick = onCancelEditClicked) {
+                    Text("Annuler")
+                }
             }
         }
 
@@ -107,19 +117,21 @@ private fun AddTodoSection(
 
 @Composable
 private fun TodoRow(
-    title: String,
-    isDone: Boolean
+    item: TodoItemUi,
+    onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Checkbox(
-            checked = isDone,
+            checked = item.isDone,
             onCheckedChange = null // Etape 4 plus tard
         )
         Text(
-            text = title,
+            text = item.title,
             style = MaterialTheme.typography.bodyLarge
         )
     }

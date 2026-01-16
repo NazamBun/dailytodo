@@ -10,17 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 2: Ajouter
- * - On gère le texte saisi
- * - On ajoute une tâche en mémoire
- *
- * Note:
- * - L'id est généré via un compteur (simple et KMP friendly).
- * - Plus tard, la DB (SQLDelight) donnera un vrai id.
+ * Etape 3: Modifier
+ * - Cliquer sur une tâche => mode édition
+ * - Bouton "Enregistrer" => met à jour le titre
  */
 class TodoListViewModel : ViewModel() {
 
-    // Compteur d'id simple (KMP friendly)
     private var nextId: Long = 4L
 
     private val _uiState = MutableStateFlow(
@@ -41,16 +36,39 @@ class TodoListViewModel : ViewModel() {
         )
     }
 
-    fun onAddClicked() {
-        val title = _uiState.value.inputTitle.trim()
+    fun onTodoClicked(id: String) {
+        val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
+        _uiState.value = _uiState.value.copy(
+            editingId = id,
+            inputTitle = item.title,
+            inputError = null
+        )
+    }
 
+    fun onPrimaryActionClicked() {
+        val title = _uiState.value.inputTitle.trim()
         if (title.isBlank()) {
-            _uiState.value = _uiState.value.copy(
-                inputError = "Le titre est obligatoire"
-            )
+            _uiState.value = _uiState.value.copy(inputError = "Le titre est obligatoire")
             return
         }
 
+        val editingId = _uiState.value.editingId
+        if (editingId == null) {
+            addTodo(title)
+        } else {
+            updateTodo(editingId, title)
+        }
+    }
+
+    fun onCancelEditClicked() {
+        _uiState.value = _uiState.value.copy(
+            editingId = null,
+            inputTitle = "",
+            inputError = null
+        )
+    }
+
+    private fun addTodo(title: String) {
         val newItem = TodoItemUi(
             id = generateId(),
             title = title,
@@ -59,6 +77,19 @@ class TodoListViewModel : ViewModel() {
 
         _uiState.value = _uiState.value.copy(
             items = listOf(newItem) + _uiState.value.items,
+            inputTitle = "",
+            inputError = null
+        )
+    }
+
+    private fun updateTodo(id: String, newTitle: String) {
+        val updated = _uiState.value.items.map { item ->
+            if (item.id == id) item.copy(title = newTitle) else item
+        }
+
+        _uiState.value = _uiState.value.copy(
+            items = updated,
+            editingId = null,
             inputTitle = "",
             inputError = null
         )
