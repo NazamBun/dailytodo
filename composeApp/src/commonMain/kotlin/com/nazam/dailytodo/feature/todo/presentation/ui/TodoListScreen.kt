@@ -19,13 +19,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 
 /**
- * Etape 8: Recherche
+ * Etape 9: Catégories
  */
 @Composable
 fun TodoListScreen(
@@ -58,6 +59,11 @@ fun TodoListScreen(
         SearchBar(
             query = state.query,
             onQueryChanged = viewModel::onQueryChanged
+        )
+
+        CategoryRow(
+            selected = state.selectedCategory,
+            onSelected = viewModel::onCategorySelected
         )
 
         TodoInputSection(
@@ -96,9 +102,9 @@ private fun FilterRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterButton("Toutes", selected == TodoFilter.ALL) { onSelected(TodoFilter.ALL) }
-        FilterButton("En cours", selected == TodoFilter.IN_PROGRESS) { onSelected(TodoFilter.IN_PROGRESS) }
-        FilterButton("Terminées", selected == TodoFilter.DONE) { onSelected(TodoFilter.DONE) }
+        SimpleButton("Toutes", selected == TodoFilter.ALL) { onSelected(TodoFilter.ALL) }
+        SimpleButton("En cours", selected == TodoFilter.IN_PROGRESS) { onSelected(TodoFilter.IN_PROGRESS) }
+        SimpleButton("Terminées", selected == TodoFilter.DONE) { onSelected(TodoFilter.DONE) }
     }
 }
 
@@ -111,8 +117,8 @@ private fun SortRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SortButton("Date", selected == TodoSort.DATE) { onSelected(TodoSort.DATE) }
-        SortButton("Titre", selected == TodoSort.TITLE) { onSelected(TodoSort.TITLE) }
+        SimpleButton("Date", selected == TodoSort.DATE) { onSelected(TodoSort.DATE) }
+        SimpleButton("Titre", selected == TodoSort.TITLE) { onSelected(TodoSort.TITLE) }
     }
 }
 
@@ -131,18 +137,34 @@ private fun SearchBar(
 }
 
 @Composable
-private fun FilterButton(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+private fun CategoryRow(
+    selected: TodoCategory,
+    onSelected: (TodoCategory) -> Unit
 ) {
-    Button(onClick = onClick) {
-        Text(text = if (isSelected) "✓ $text" else text)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CategoryButton(TodoCategory.PERSONAL, selected, onSelected)
+        CategoryButton(TodoCategory.WORK, selected, onSelected)
+        CategoryButton(TodoCategory.SPORT, selected, onSelected)
     }
 }
 
 @Composable
-private fun SortButton(
+private fun CategoryButton(
+    category: TodoCategory,
+    selected: TodoCategory,
+    onSelected: (TodoCategory) -> Unit
+) {
+    val isSelected = selected == category
+    Button(onClick = { onSelected(category) }) {
+        Text(text = if (isSelected) "✓ ${category.label}" else category.label)
+    }
+}
+
+@Composable
+private fun SimpleButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -162,7 +184,6 @@ private fun TodoInputSection(
     onCancelEditClicked: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -214,11 +235,16 @@ private fun TodoRow(
             onCheckedChange = onDoneChanged
         )
 
-        Text(
-            text = item.title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = item.category.label,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
 
         Button(onClick = onDeleteClick) {
             Text("Suppr.")

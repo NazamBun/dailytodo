@@ -1,6 +1,7 @@
 package com.nazam.dailytodo.feature.todo.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoListUiState
@@ -12,9 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 8: Recherche
- * - Champ de recherche qui filtre par titre
- * - Ordre: filtre -> recherche -> tri
+ * Etape 9: Catégories
+ * - Chaque tâche a une catégorie
+ * - L'ajout / l'édition permet de choisir la catégorie
  */
 class TodoListViewModel : ViewModel() {
 
@@ -23,13 +24,14 @@ class TodoListViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
         TodoListUiState(
             items = listOf(
-                TodoItemUi(id = "1", title = "Acheter du lait", isDone = false),
-                TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true),
-                TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false),
+                TodoItemUi(id = "1", title = "Acheter du lait", isDone = false, category = TodoCategory.PERSONAL),
+                TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true, category = TodoCategory.SPORT),
+                TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false, category = TodoCategory.WORK),
             ),
             filter = TodoFilter.ALL,
             sort = TodoSort.DATE,
-            query = ""
+            query = "",
+            selectedCategory = TodoCategory.PERSONAL
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
@@ -51,12 +53,17 @@ class TodoListViewModel : ViewModel() {
         updateState(_uiState.value.copy(query = newQuery))
     }
 
+    fun onCategorySelected(category: TodoCategory) {
+        updateState(_uiState.value.copy(selectedCategory = category))
+    }
+
     fun onTodoClicked(id: String) {
         val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
         updateState(
             _uiState.value.copy(
                 editingId = id,
                 inputTitle = item.title,
+                selectedCategory = item.category,
                 inputError = null
             )
         )
@@ -82,7 +89,8 @@ class TodoListViewModel : ViewModel() {
             _uiState.value.copy(
                 editingId = null,
                 inputTitle = "",
-                inputError = null
+                inputError = null,
+                selectedCategory = TodoCategory.PERSONAL
             )
         )
     }
@@ -103,7 +111,8 @@ class TodoListViewModel : ViewModel() {
                 items = newItems,
                 editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
                 inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
-                inputError = if (shouldCancelEdit) null else _uiState.value.inputError
+                inputError = if (shouldCancelEdit) null else _uiState.value.inputError,
+                selectedCategory = if (shouldCancelEdit) TodoCategory.PERSONAL else _uiState.value.selectedCategory
             )
         )
     }
@@ -120,21 +129,25 @@ class TodoListViewModel : ViewModel() {
         val newItem = TodoItemUi(
             id = generateId(),
             title = title,
-            isDone = false
+            isDone = false,
+            category = _uiState.value.selectedCategory
         )
 
         updateState(
             _uiState.value.copy(
                 items = listOf(newItem) + _uiState.value.items,
                 inputTitle = "",
-                inputError = null
+                inputError = null,
+                selectedCategory = TodoCategory.PERSONAL
             )
         )
     }
 
     private fun updateTodo(id: String, newTitle: String) {
+        val newCategory = _uiState.value.selectedCategory
+
         val updated = _uiState.value.items.map { item ->
-            if (item.id == id) item.copy(title = newTitle) else item
+            if (item.id == id) item.copy(title = newTitle, category = newCategory) else item
         }
 
         updateState(
@@ -142,7 +155,8 @@ class TodoListViewModel : ViewModel() {
                 items = updated,
                 editingId = null,
                 inputTitle = "",
-                inputError = null
+                inputError = null,
+                selectedCategory = TodoCategory.PERSONAL
             )
         )
     }
