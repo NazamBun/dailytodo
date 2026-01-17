@@ -14,9 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel (MVVM).
  *
- * Etape 10: Date limite + alerte "en retard"
- * - Une tâche peut avoir une date limite (millis)
- * - Si date < maintenant et tâche pas faite => EN RETARD
+ * UI refonte:
+ * - Le formulaire (titre/catégorie/date) est utilisé dans un BottomSheet (popup).
+ * - Le FAB "+" ouvre le BottomSheet en mode "Ajout".
+ * - Le clic sur une tâche ouvre le BottomSheet en mode "Edition".
  */
 class TodoListViewModel : ViewModel() {
 
@@ -28,7 +29,9 @@ class TodoListViewModel : ViewModel() {
                 TodoItemUi(id = "1", title = "Acheter du lait", isDone = false, category = TodoCategory.PERSONAL, dueDateMillis = null),
                 TodoItemUi(id = "2", title = "Faire 20 minutes de sport", isDone = true, category = TodoCategory.SPORT, dueDateMillis = null),
                 TodoItemUi(id = "3", title = "Réviser Kotlin", isDone = false, category = TodoCategory.WORK, dueDateMillis = null),
-            )
+            ),
+            filter = TodoFilter.ALL,
+            sort = TodoSort.DATE
         )
     )
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
@@ -37,12 +40,84 @@ class TodoListViewModel : ViewModel() {
         updateState(_uiState.value)
     }
 
-    fun onTitleChanged(newTitle: String) {
-        updateState(_uiState.value.copy(inputTitle = newTitle, inputError = null))
-    }
+    // ----------------------------
+    // Actions UI (liste)
+    // ----------------------------
 
     fun onQueryChanged(newQuery: String) {
         updateState(_uiState.value.copy(query = newQuery))
+    }
+
+    fun onFilterSelected(filter: TodoFilter) {
+        updateState(_uiState.value.copy(filter = filter))
+    }
+
+    fun onSortSelected(sort: TodoSort) {
+        updateState(_uiState.value.copy(sort = sort))
+    }
+
+    fun onDoneToggled(id: String, isDone: Boolean) {
+        val updated = _uiState.value.items.map { item ->
+            if (item.id == id) item.copy(isDone = isDone) else item
+        }
+        updateState(_uiState.value.copy(items = updated))
+    }
+
+    fun onDeleteClicked(id: String) {
+        val newItems = _uiState.value.items.filterNot { it.id == id }
+
+        val shouldCancelEdit = _uiState.value.editingId == id
+        updateState(
+            _uiState.value.copy(
+                items = newItems,
+                editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
+                inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
+                inputError = if (shouldCancelEdit) null else _uiState.value.inputError,
+                selectedCategory = if (shouldCancelEdit) TodoCategory.PERSONAL else _uiState.value.selectedCategory,
+                inputDueDateMillis = if (shouldCancelEdit) null else _uiState.value.inputDueDateMillis
+            )
+        )
+    }
+
+    // ----------------------------
+    // BottomSheet (formulaire)
+    // ----------------------------
+
+    /**
+     * Mode AJOUT: reset du formulaire.
+     * (Le screen ouvrira le BottomSheet après.)
+     */
+    fun onAddRequested() {
+        updateState(
+            _uiState.value.copy(
+                editingId = null,
+                inputTitle = "",
+                inputError = null,
+                selectedCategory = TodoCategory.PERSONAL,
+                inputDueDateMillis = null
+            )
+        )
+    }
+
+    /**
+     * Mode EDITION: on charge la tâche dans le formulaire.
+     * (Le screen ouvrira le BottomSheet après.)
+     */
+    fun onEditRequested(id: String) {
+        val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
+        updateState(
+            _uiState.value.copy(
+                editingId = id,
+                inputTitle = item.title,
+                inputError = null,
+                selectedCategory = item.category,
+                inputDueDateMillis = item.dueDateMillis
+            )
+        )
+    }
+
+    fun onTitleChanged(newTitle: String) {
+        updateState(_uiState.value.copy(inputTitle = newTitle, inputError = null))
     }
 
     fun onCategorySelected(category: TodoCategory) {
@@ -58,31 +133,28 @@ class TodoListViewModel : ViewModel() {
         updateState(_uiState.value.copy(inputDueDateMillis = null))
     }
 
-    fun onTodoClicked(id: String) {
-        val item = _uiState.value.items.firstOrNull { it.id == id } ?: return
-        updateState(
-            _uiState.value.copy(
-                editingId = id,
-                inputTitle = item.title,
-                selectedCategory = item.category,
-                inputDueDateMillis = item.dueDateMillis,
-                inputError = null
-            )
-        )
-    }
-
-    fun onPrimaryActionClicked() {
+    /**
+     * Save depuis le BottomSheet.
+     * @return true si OK (on peut fermer le BottomSheet), false si erreur.
+     */
+    fun onSaveClicked(): Boolean {
         val title = _uiState.value.inputTitle.trim()
         if (title.isBlank()) {
             updateState(_uiState.value.copy(inputError = "Le titre est obligatoire"))
-            return
+            return false
         }
 
         val editingId = _uiState.value.editingId
-        if (editingId == null) addTodo(title) else updateTodo(editingId, title)
+        return if (editingId == null) {
+            addTodo(title)
+            true
+        } else {
+            updateTodo(editingId, title)
+            true
+        }
     }
 
-    fun onCancelEditClicked() {
+    fun onCancelClicked() {
         updateState(
             _uiState.value.copy(
                 editingId = null,
@@ -94,36 +166,9 @@ class TodoListViewModel : ViewModel() {
         )
     }
 
-    fun onDoneToggled(id: String, isDone: Boolean) {
-        val updated = _uiState.value.items.map { item ->
-            if (item.id == id) item.copy(isDone = isDone) else item
-        }
-        updateState(_uiState.value.copy(items = updated))
-    }
-
-    fun onDeleteClicked(id: String) {
-        val newItems = _uiState.value.items.filterNot { it.id == id }
-        val shouldCancelEdit = _uiState.value.editingId == id
-
-        updateState(
-            _uiState.value.copy(
-                items = newItems,
-                editingId = if (shouldCancelEdit) null else _uiState.value.editingId,
-                inputTitle = if (shouldCancelEdit) "" else _uiState.value.inputTitle,
-                inputError = if (shouldCancelEdit) null else _uiState.value.inputError,
-                selectedCategory = if (shouldCancelEdit) TodoCategory.PERSONAL else _uiState.value.selectedCategory,
-                inputDueDateMillis = if (shouldCancelEdit) null else _uiState.value.inputDueDateMillis
-            )
-        )
-    }
-
-    fun onFilterSelected(filter: TodoFilter) {
-        updateState(_uiState.value.copy(filter = filter))
-    }
-
-    fun onSortSelected(sort: TodoSort) {
-        updateState(_uiState.value.copy(sort = sort))
-    }
+    // ----------------------------
+    // Private
+    // ----------------------------
 
     private fun addTodo(title: String) {
         val newItem = TodoItemUi(
@@ -140,7 +185,8 @@ class TodoListViewModel : ViewModel() {
                 inputTitle = "",
                 inputError = null,
                 selectedCategory = TodoCategory.PERSONAL,
-                inputDueDateMillis = null
+                inputDueDateMillis = null,
+                editingId = null
             )
         )
     }

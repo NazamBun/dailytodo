@@ -4,19 +4,32 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nazam.dailytodo.core.time.nowMillis
@@ -29,121 +42,120 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
- * Etape 10: Date limite + alerte visuelle ("en retard")
- *
- * Factorisation:
- * - ChoiceRow réutilisable (filtre / tri / catégories)
- * - nowMillis() calculé une seule fois (meilleure perf)
+ * Refonte UI:
+ * - FAB "+" pour ajouter
+ * - BottomSheet (popup en bas) pour ajouter / modifier
+ * - Liste en cards (plus joli)
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoListScreen(
     viewModel: TodoListViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
-    val isEditing = state.editingId != null
 
-    // ✅ "now" une seule fois pour tout l'écran
+    // "now" une seule fois (perf)
     val now = nowMillis()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(text = "Mes tâches", style = MaterialTheme.typography.headlineSmall)
+    // BottomSheet open/close
+    var isSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        ChoiceRow(
-            items = listOf(TodoFilter.ALL, TodoFilter.IN_PROGRESS, TodoFilter.DONE),
-            selected = state.filter,
-            label = { filter ->
-                when (filter) {
-                    TodoFilter.ALL -> "Toutes"
-                    TodoFilter.IN_PROGRESS -> "En cours"
-                    TodoFilter.DONE -> "Terminées"
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("DailyTodo") }) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.onAddRequested()
+                    isSheetOpen = true
                 }
-            },
-            onSelected = viewModel::onFilterSelected
-        )
+            ) { Text("+") }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SearchBar(query = state.query, onQueryChanged = viewModel::onQueryChanged)
 
-        ChoiceRow(
-            items = listOf(TodoSort.DATE, TodoSort.TITLE),
-            selected = state.sort,
-            label = { sort ->
-                when (sort) {
-                    TodoSort.DATE -> "Date"
-                    TodoSort.TITLE -> "Titre"
+            ChoiceRow(
+                items = listOf(TodoFilter.ALL, TodoFilter.IN_PROGRESS, TodoFilter.DONE),
+                selected = state.filter,
+                label = { f ->
+                    when (f) {
+                        TodoFilter.ALL -> "Toutes"
+                        TodoFilter.IN_PROGRESS -> "En cours"
+                        TodoFilter.DONE -> "Terminées"
+                    }
+                },
+                onSelected = viewModel::onFilterSelected
+            )
+
+            ChoiceRow(
+                items = listOf(TodoSort.DATE, TodoSort.TITLE),
+                selected = state.sort,
+                label = { s ->
+                    when (s) {
+                        TodoSort.DATE -> "Date"
+                        TodoSort.TITLE -> "Titre"
+                    }
+                },
+                onSelected = viewModel::onSortSelected
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(items = state.visibleItems, key = { it.id }) { item ->
+                    TodoCard(
+                        item = item,
+                        nowMillis = now,
+                        onClick = {
+                            viewModel.onEditRequested(item.id)
+                            isSheetOpen = true
+                        },
+                        onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) },
+                        onDeleteClick = { viewModel.onDeleteClicked(item.id) }
+                    )
                 }
-            },
-            onSelected = viewModel::onSortSelected
-        )
-
-        SearchBar(
-            query = state.query,
-            onQueryChanged = viewModel::onQueryChanged
-        )
-
-        ChoiceRow(
-            items = listOf(TodoCategory.PERSONAL, TodoCategory.WORK, TodoCategory.SPORT),
-            selected = state.selectedCategory,
-            label = { it.label },
-            onSelected = viewModel::onCategorySelected
-        )
-
-        DueDateRow(
-            isEditing = isEditing,
-            inputDueDateMillis = state.inputDueDateMillis,
-            nowMillis = now,
-            onAddDays = viewModel::onDueDateAddDays,
-            onClear = viewModel::onDueDateCleared
-        )
-
-        TodoInputSection(
-            title = state.inputTitle,
-            error = state.inputError,
-            isEditing = isEditing,
-            onTitleChanged = viewModel::onTitleChanged,
-            onPrimaryActionClicked = viewModel::onPrimaryActionClicked,
-            onCancelEditClicked = viewModel::onCancelEditClicked
-        )
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(items = state.visibleItems, key = { it.id }) { item ->
-                TodoRow(
-                    item = item,
-                    nowMillis = now,
-                    onRowClick = { viewModel.onTodoClicked(item.id) },
-                    onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) },
-                    onDeleteClick = { viewModel.onDeleteClicked(item.id) }
-                )
             }
         }
     }
-}
 
-/**
- * Un seul Row réutilisable pour:
- * - filtre
- * - tri
- * - catégories
- */
-@Composable
-private fun <T> ChoiceRow(
-    items: List<T>,
-    selected: T,
-    label: (T) -> String,
-    onSelected: (T) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items.forEach { item ->
-            SimpleButton(
-                text = label(item),
-                isSelected = item == selected,
-                onClick = { onSelected(item) }
+    if (isSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                isSheetOpen = false
+                viewModel.onCancelClicked()
+            },
+            sheetState = sheetState
+        ) {
+            TodoFormSheet(
+                title = state.inputTitle,
+                error = state.inputError,
+                selectedCategory = state.selectedCategory,
+                inputDueDateMillis = state.inputDueDateMillis,
+                isEditing = state.editingId != null,
+                nowMillis = now,
+                onTitleChanged = viewModel::onTitleChanged,
+                onCategorySelected = viewModel::onCategorySelected,
+                onAddDays = viewModel::onDueDateAddDays,
+                onClearDue = viewModel::onDueDateCleared,
+                onCancel = {
+                    isSheetOpen = false
+                    viewModel.onCancelClicked()
+                },
+                onSave = {
+                    val ok = viewModel.onSaveClicked()
+                    if (ok) isSheetOpen = false
+                }
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -158,32 +170,125 @@ private fun SearchBar(
         onValueChange = onQueryChanged,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        label = { Text("Rechercher…") }
+        label = { Text("Rechercher") }
     )
 }
 
 @Composable
-private fun DueDateRow(
-    isEditing: Boolean,
-    inputDueDateMillis: Long?,
-    nowMillis: Long,
-    onAddDays: (Int) -> Unit,
-    onClear: () -> Unit
+private fun <T> ChoiceRow(
+    items: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelected: (T) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items.forEach { item ->
+            val isSelected = item == selected
+            Button(onClick = { onSelected(item) }) {
+                Text(if (isSelected) "✓ ${label(item)}" else label(item))
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodoCard(
+    item: TodoItemUi,
+    nowMillis: Long,
+    onClick: () -> Unit,
+    onDoneChanged: (Boolean) -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    val due = item.dueDateMillis
+    val isOverdue = due != null && !item.isDone && due < nowMillis
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Checkbox(checked = item.isDone, onCheckedChange = onDoneChanged)
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = item.title, style = MaterialTheme.typography.titleMedium)
+                Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
+
+                if (due != null) {
+                    val label = buildDueLabel(nowMillis, due)
+                    Text(
+                        text = if (isOverdue) "EN RETARD • $label" else "Date limite • $label",
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            TextButton(onClick = onDeleteClick) { Text("Suppr.") }
+        }
+    }
+}
+
+@Composable
+private fun TodoFormSheet(
+    title: String,
+    error: String?,
+    selectedCategory: TodoCategory,
+    inputDueDateMillis: Long?,
+    isEditing: Boolean,
+    nowMillis: Long,
+    onTitleChanged: (String) -> Unit,
+    onCategorySelected: (TodoCategory) -> Unit,
+    onAddDays: (Int) -> Unit,
+    onClearDue: () -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         Text(
-            text = if (isEditing) "Date limite (édition)" else "Date limite (nouvelle)",
-            style = MaterialTheme.typography.bodySmall
+            text = if (isEditing) "Modifier la tâche" else "Nouvelle tâche",
+            style = MaterialTheme.typography.headlineSmall
         )
 
-        Row(
+        OutlinedTextField(
+            value = title,
+            onValueChange = onTitleChanged,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            singleLine = true,
+            label = { Text("Titre") }
+        )
+
+        if (error != null) {
+            Text(text = error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+
+        Text("Catégorie", style = MaterialTheme.typography.titleSmall)
+        ChoiceRow(
+            items = listOf(TodoCategory.PERSONAL, TodoCategory.WORK, TodoCategory.SPORT),
+            selected = selectedCategory,
+            label = { it.label },
+            onSelected = onCategorySelected
+        )
+
+        Text("Date limite", style = MaterialTheme.typography.titleSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { onAddDays(1) }) { Text("+1j") }
             Button(onClick = { onAddDays(3) }) { Text("+3j") }
             Button(onClick = { onAddDays(7) }) { Text("+7j") }
-            Button(onClick = onClear) { Text("Aucune") }
+            Button(onClick = onClearDue) { Text("Aucune") }
         }
 
         if (inputDueDateMillis != null) {
@@ -192,95 +297,14 @@ private fun DueDateRow(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-    }
-}
 
-@Composable
-private fun SimpleButton(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Button(onClick = onClick) {
-        Text(text = if (isSelected) "✓ $text" else text)
-    }
-}
-
-@Composable
-private fun TodoInputSection(
-    title: String,
-    error: String?,
-    isEditing: Boolean,
-    onTitleChanged: (String) -> Unit,
-    onPrimaryActionClicked: () -> Unit,
-    onCancelEditClicked: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = onTitleChanged,
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                label = { Text(if (isEditing) "Modifier la tâche" else "Nouvelle tâche") }
-            )
-
-            Button(onClick = onPrimaryActionClicked) {
-                Text(if (isEditing) "Enregistrer" else "Ajouter")
-            }
-
-            if (isEditing) {
-                Button(onClick = onCancelEditClicked) { Text("Annuler") }
-            }
+            Button(modifier = Modifier.weight(1f), onClick = onCancel) { Text("Annuler") }
+            Button(modifier = Modifier.weight(1f), onClick = onSave) { Text("Enregistrer") }
         }
-
-        if (error != null) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-}
-
-@Composable
-private fun TodoRow(
-    item: TodoItemUi,
-    nowMillis: Long,
-    onRowClick: () -> Unit,
-    onDoneChanged: (Boolean) -> Unit,
-    onDeleteClick: () -> Unit
-) {
-    val due = item.dueDateMillis
-    val isOverdue = due != null && !item.isDone && due < nowMillis
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onRowClick),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Checkbox(checked = item.isDone, onCheckedChange = onDoneChanged)
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = item.title, style = MaterialTheme.typography.bodyLarge)
-            Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
-
-            if (due != null) {
-                val label = buildDueLabel(nowMillis, due)
-                Text(
-                    text = if (isOverdue) "EN RETARD • $label" else "Date limite • $label",
-                    color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        Button(onClick = onDeleteClick) { Text("Suppr.") }
     }
 }
 
