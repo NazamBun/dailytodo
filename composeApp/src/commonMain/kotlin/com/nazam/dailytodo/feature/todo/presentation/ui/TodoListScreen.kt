@@ -1,6 +1,8 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -282,11 +284,14 @@ private fun TodoList(
     onDoneChanged: (String, Boolean) -> Unit,
     onDeleteClick: (String) -> Unit
 ) {
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        androidx.compose.foundation.lazy.items(items, key = { it.id }) { item ->
+        items(
+            items = items,
+            key = { it.id }
+        ) { item ->
             TodoItemCard(
                 item = item,
                 nowMillis = nowMillis,
