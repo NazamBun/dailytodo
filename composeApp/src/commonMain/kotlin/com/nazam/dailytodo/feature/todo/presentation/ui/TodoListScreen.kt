@@ -15,12 +15,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +30,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,6 +40,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.nazam.dailytodo.core.time.nowMillis
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
@@ -48,19 +51,20 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
 import com.nazam.dailytodo.ui.dimens.DailyTodoDimens
 import com.nazam.dailytodo.ui.strings.DailyTodoStrings
+import com.nazam.dailytodo.ui.theme.DailyTodoColors
 import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
- * UI Premium++ (KMP friendly)
- * - Header premium (titre + sous-titre)
- * - Tabs style "Instagram" (barre sous l'onglet actif) SANS tabIndicatorOffset (stable)
- * - Search en "pill" + Tri en chips
- * - Liste en ElevatedCard
- * - FAB "+"
- * - BottomSheet propre pour Ajouter / Modifier
+ * UI PRO (comme ton image):
+ * - Fond dégradé bleu
+ * - Cartes blanches avec ombres douces
+ * - Header + Tabs transparents
+ * - FAB blanc + texte bleu
  *
- * ✅ On ne touche pas la logique du ViewModel.
+ * ✅ KMP friendly
+ * ✅ Factorisé (strings + dimens)
+ * ✅ On ne change PAS la logique du ViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,108 +73,131 @@ fun TodoListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // ✅ "now" une seule fois (perf)
     val now = nowMillis()
 
-    // BottomSheet open/close
     var isSheetOpen by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Column(verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.SmallSpacing)) {
-                            Text(
-                                text = DailyTodoStrings.AppName,
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text(
-                                text = DailyTodoStrings.Subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f)
-                            )
+    // ✅ Fond dégradé (comme ton image)
+    val backgroundBrush = Brush.linearGradient(
+        colors = listOf(DailyTodoColors.GradientStart, DailyTodoColors.GradientEnd)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundBrush)
+    ) {
+        Scaffold(
+            // ✅ IMPORTANT: transparent pour voir le dégradé
+            containerColor = Color.Transparent,
+            topBar = {
+                Column {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        ),
+                        title = {
+                            Column(verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.SmallSpacing)) {
+                                Text(
+                                    text = DailyTodoStrings.AppName,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = DailyTodoStrings.Subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.80f)
+                                )
+                            }
                         }
-                    }
+                    )
+
+                    FilterTabs(
+                        selected = state.filter,
+                        onSelected = viewModel::onFilterSelected
+                    )
+                }
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        viewModel.onAddRequested()
+                        isSheetOpen = true
+                    },
+                    containerColor = Color.White,
+                    contentColor = DailyTodoColors.Primary,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
+                ) {
+                    Text(
+                        text = DailyTodoStrings.FabPlus,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(
+                        horizontal = DailyTodoDimens.ScreenPadding,
+                        vertical = DailyTodoDimens.ScreenPaddingVertical
+                    ),
+                verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
+            ) {
+                SearchAndSortCard(
+                    query = state.query,
+                    onQueryChanged = viewModel::onQueryChanged,
+                    sort = state.sort,
+                    onSortSelected = viewModel::onSortSelected
                 )
 
-                FilterTabs(
-                    selected = state.filter,
-                    onSelected = viewModel::onFilterSelected
+                TodoList(
+                    items = state.visibleItems,
+                    nowMillis = now,
+                    onItemClick = { id ->
+                        viewModel.onEditRequested(id)
+                        isSheetOpen = true
+                    },
+                    onDoneChanged = { id, checked -> viewModel.onDoneToggled(id, checked) },
+                    onDeleteClick = { id -> viewModel.onDeleteClicked(id) }
                 )
             }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.onAddRequested()
-                    isSheetOpen = true
-                }
-            ) { Text(DailyTodoStrings.FabPlus) }
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(
-                    horizontal = DailyTodoDimens.ScreenPadding,
-                    vertical = DailyTodoDimens.ScreenPaddingVertical
-                ),
-            verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
-        ) {
-            SearchAndSortCard(
-                query = state.query,
-                onQueryChanged = viewModel::onQueryChanged,
-                sort = state.sort,
-                onSortSelected = viewModel::onSortSelected
-            )
 
-            TodoList(
-                items = state.visibleItems,
-                nowMillis = now,
-                onItemClick = { id ->
-                    viewModel.onEditRequested(id)
-                    isSheetOpen = true
-                },
-                onDoneChanged = { id, checked -> viewModel.onDoneToggled(id, checked) },
-                onDeleteClick = { id -> viewModel.onDeleteClicked(id) }
-            )
-        }
-    }
-
-    if (isSheetOpen) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                isSheetOpen = false
-                viewModel.onCancelClicked()
-            },
-            sheetState = sheetState
-        ) {
-            TodoFormSheet(
-                isEditing = state.editingId != null,
-                title = state.inputTitle,
-                error = state.inputError,
-                selectedCategory = state.selectedCategory,
-                inputDueDateMillis = state.inputDueDateMillis,
-                nowMillis = now,
-                onTitleChanged = viewModel::onTitleChanged,
-                onCategorySelected = viewModel::onCategorySelected,
-                onAddDays = viewModel::onDueDateAddDays,
-                onClearDue = viewModel::onDueDateCleared,
-                onCancel = {
+        if (isSheetOpen) {
+            ModalBottomSheet(
+                onDismissRequest = {
                     isSheetOpen = false
                     viewModel.onCancelClicked()
                 },
-                onSave = {
-                    val ok = viewModel.onSaveClicked()
-                    if (ok) isSheetOpen = false
-                }
-            )
+                sheetState = sheetState,
+                containerColor = Color.White
+            ) {
+                TodoFormSheet(
+                    isEditing = state.editingId != null,
+                    title = state.inputTitle,
+                    error = state.inputError,
+                    selectedCategory = state.selectedCategory,
+                    inputDueDateMillis = state.inputDueDateMillis,
+                    nowMillis = now,
+                    onTitleChanged = viewModel::onTitleChanged,
+                    onCategorySelected = viewModel::onCategorySelected,
+                    onAddDays = viewModel::onDueDateAddDays,
+                    onClearDue = viewModel::onDueDateCleared,
+                    onCancel = {
+                        isSheetOpen = false
+                        viewModel.onCancelClicked()
+                    },
+                    onSave = {
+                        val ok = viewModel.onSaveClicked()
+                        if (ok) isSheetOpen = false
+                    }
+                )
 
-            Spacer(modifier = Modifier.height(DailyTodoDimens.ScreenPaddingVertical))
+                Spacer(modifier = Modifier.height(DailyTodoDimens.ScreenPaddingVertical))
+            }
         }
     }
 }
@@ -185,11 +212,12 @@ private fun FilterTabs(
         TodoFilter.IN_PROGRESS to DailyTodoStrings.TabInProgress,
         TodoFilter.DONE to DailyTodoStrings.TabDone
     )
+
     val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
 
     SecondaryTabRow(
         selectedTabIndex = selectedIndex,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
         indicator = {}
     ) {
         tabs.forEachIndexed { index, (filter, title) ->
@@ -208,21 +236,19 @@ private fun FilterTabs(
                     Text(
                         text = title,
                         style = if (isSelected) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f),
+                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.65f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // ✅ barre "Instagram" (sans tabIndicatorOffset)
+                    // ✅ 1 seule barre (instagram)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(DailyTodoDimens.TabIndicatorHeight)
                             .clip(RoundedCornerShape(DailyTodoDimens.RadiusPill))
                             .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surface
+                                if (isSelected) Color.White else Color.Transparent
                             )
                     )
                 }
@@ -240,13 +266,14 @@ private fun SearchAndSortCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard)
+        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.92f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Column(
             modifier = Modifier.padding(DailyTodoDimens.CardPadding),
             verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
         ) {
-            // ✅ Search "pill"
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChanged,
@@ -328,11 +355,13 @@ private fun TodoItemCard(
     val due = item.dueDateMillis
     val isOverdue = due != null && !item.isDone && due < nowMillis
 
-    ElevatedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard)
+        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Row(
             modifier = Modifier
@@ -359,7 +388,7 @@ private fun TodoItemCard(
                 Text(
                     text = item.category.label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f)
+                    color = DailyTodoColors.TextSecondary
                 )
 
                 if (due != null) {
@@ -367,8 +396,7 @@ private fun TodoItemCard(
                     Text(
                         text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label"
                         else "${DailyTodoStrings.DueDate} • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.80f),
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else DailyTodoColors.TextSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -379,10 +407,6 @@ private fun TodoItemCard(
     }
 }
 
-/**
- * BottomSheet (formulaire)
- * - Simple, lisible, et compatible KMP
- */
 @Composable
 private fun TodoFormSheet(
     isEditing: Boolean,
@@ -468,33 +492,6 @@ private fun CategoryChip(
         selected = isSelected,
         onClick = { onSelected(category) },
         label = { Text(if (isSelected) "✓ ${category.label}" else category.label) }
-    )
-}
-
-@Composable
-private fun CategoryBadge(
-    category: TodoCategory
-) {
-    val (bg, fg) = when (category) {
-        TodoCategory.PERSONAL ->
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) to MaterialTheme.colorScheme.primary
-
-        TodoCategory.WORK ->
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f) to MaterialTheme.colorScheme.secondary
-
-        TodoCategory.SPORT ->
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) to MaterialTheme.colorScheme.primary
-    }
-
-    FilterChip(
-        selected = true,
-        onClick = {},
-        label = { Text(category.label) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = bg,
-            selectedLabelColor = fg
-        ),
-        border = null
     )
 }
 

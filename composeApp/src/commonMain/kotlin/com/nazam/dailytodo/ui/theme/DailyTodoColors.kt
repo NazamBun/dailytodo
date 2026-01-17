@@ -3,28 +3,27 @@ package com.nazam.dailytodo.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palette MONOCHROME STRICT
- * Noir / Gris / Blanc uniquement
+ * Palette PRO (Bleu dégradé + blanc)
+ * Objectif: design moderne, clean, "premium"
  */
 object DailyTodoColors {
 
-    // Base
-    val Black = Color(0xFF0B0F14)
-    val White = Color(0xFFFFFFFF)
+    // Gradient background (comme ton image)
+    val GradientStart = Color(0xFF12B3FF) // bleu clair
+    val GradientEnd = Color(0xFF1F5BFF)   // bleu profond
 
-    // Grays (light)
-    val Gray50 = Color(0xFFF7F7F8)
-    val Gray100 = Color(0xFFF0F1F3)
-    val Gray200 = Color(0xFFE4E6EA)
-    val Gray300 = Color(0xFFD1D5DB)
-    val Gray700 = Color(0xFF374151)
+    // Surfaces
+    val Surface = Color(0xFFFFFFFF)       // cartes
+    val SurfaceSoft = Color(0xFFF4F7FF)   // petits fonds doux
 
-    // Dark surfaces
-    val DarkBg = Color(0xFF0B0F14)
-    val DarkSurface = Color(0xFF111827)
-    val DarkSurface2 = Color(0xFF161F2D)
-    val DarkOutline = Color(0xFF2A3445)
+    // Text
+    val TextPrimary = Color(0xFF0B1220)
+    val TextSecondary = Color(0xFF556070)
 
-    // Error (rouge pro)
+    // Accents (pro)
+    val Primary = Color(0xFF1F5BFF)
+    val PrimarySoft = Color(0xFF12B3FF)
+
+    // Status
     val Error = Color(0xFFB91C1C)
 }

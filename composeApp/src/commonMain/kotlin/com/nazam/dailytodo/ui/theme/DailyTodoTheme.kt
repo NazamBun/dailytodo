@@ -1,73 +1,62 @@
 package com.nazam.dailytodo.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkMode
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.isSystemInDarkMode
 import androidx.compose.ui.graphics.Color
 
 /**
- * Thème DailyTodo (Monochrome strict)
- * => Noir / Gris / Blanc uniquement
- * => IMPORTANT: surfaceTint = Transparent (supprime l'effet violet/lavande)
+ * Thème DailyTodo (PRO bleu)
+ * IMPORTANT: surfaceTint = Transparent => évite les teintes bizarres
  */
-private val LightColorScheme: ColorScheme = lightColorScheme(
-    primary = DailyTodoColors.Black,
-    onPrimary = DailyTodoColors.White,
+private val LightColors: ColorScheme = lightColorScheme(
+    primary = DailyTodoColors.Primary,
+    onPrimary = Color.White,
 
-    secondary = DailyTodoColors.Black,
-    onSecondary = DailyTodoColors.White,
+    secondary = DailyTodoColors.PrimarySoft,
+    onSecondary = Color.White,
 
-    tertiary = DailyTodoColors.Black,
-    onTertiary = DailyTodoColors.White,
+    background = DailyTodoColors.SurfaceSoft,
+    onBackground = DailyTodoColors.TextPrimary,
 
-    background = DailyTodoColors.Gray50,
-    onBackground = DailyTodoColors.Black,
+    surface = DailyTodoColors.Surface,
+    onSurface = DailyTodoColors.TextPrimary,
 
-    surface = DailyTodoColors.White,
-    onSurface = DailyTodoColors.Black,
+    surfaceVariant = DailyTodoColors.SurfaceSoft,
+    onSurfaceVariant = DailyTodoColors.TextSecondary,
 
-    surfaceVariant = DailyTodoColors.Gray100,
-    onSurfaceVariant = DailyTodoColors.Gray700,
-
-    outline = DailyTodoColors.Gray200,
-    outlineVariant = DailyTodoColors.Gray200,
-
+    outline = Color(0xFFE6ECF5),
     error = DailyTodoColors.Error,
-    onError = DailyTodoColors.White,
+    onError = Color.White,
 
-    // ✅ C’EST ÇA QUI ENLÈVE LE “VIOLET GRIS”
+    // ✅ empêche les teintes violet/gris
     surfaceTint = Color.Transparent
 )
 
-private val DarkColorScheme: ColorScheme = darkColorScheme(
-    primary = DailyTodoColors.White,
-    onPrimary = DailyTodoColors.Black,
+private val DarkColors: ColorScheme = darkColorScheme(
+    primary = DailyTodoColors.PrimarySoft,
+    onPrimary = Color.Black,
 
-    secondary = DailyTodoColors.White,
-    onSecondary = DailyTodoColors.Black,
+    secondary = DailyTodoColors.Primary,
+    onSecondary = Color.White,
 
-    tertiary = DailyTodoColors.White,
-    onTertiary = DailyTodoColors.Black,
+    background = Color(0xFF070B12),
+    onBackground = Color(0xFFEAF0FF),
 
-    background = DailyTodoColors.DarkBg,
-    onBackground = DailyTodoColors.White,
+    surface = Color(0xFF0C1220),
+    onSurface = Color(0xFFEAF0FF),
 
-    surface = DailyTodoColors.DarkSurface,
-    onSurface = DailyTodoColors.White,
+    surfaceVariant = Color(0xFF0F172A),
+    onSurfaceVariant = Color(0xFFB6C3D6),
 
-    surfaceVariant = DailyTodoColors.DarkSurface2,
-    onSurfaceVariant = DailyTodoColors.Gray300,
-
-    outline = DailyTodoColors.DarkOutline,
-    outlineVariant = DailyTodoColors.DarkOutline,
-
+    outline = Color(0xFF22304A),
     error = DailyTodoColors.Error,
-    onError = DailyTodoColors.White,
+    onError = Color.White,
 
-    // ✅ enlève la teinte “magenta/violet”
+    // ✅ empêche les teintes violet/gris
     surfaceTint = Color.Transparent
 )
 
@@ -78,7 +67,7 @@ fun DailyTodoTheme(
     val isDark = isSystemInDarkMode()
 
     MaterialTheme(
-        colorScheme = if (isDark) DarkColorScheme else LightColorScheme,
+        colorScheme = if (isDark) DarkColors else LightColors,
         content = content
     )
 }
