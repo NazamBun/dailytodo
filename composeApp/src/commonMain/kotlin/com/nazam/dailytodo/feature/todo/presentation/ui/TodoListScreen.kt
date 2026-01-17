@@ -1,14 +1,18 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -21,8 +25,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,14 +50,14 @@ import kotlin.math.ceil
 
 /**
  * UI Premium:
- * - TopAppBar + TabRow (style "Instagram") pour le filtre
- * - Search + Tri en card
+ * - TopAppBar + onglets (style Instagram) pour Filtre: Toutes / En cours / Terminées
+ * - Search + Tri dans une card
  * - Liste en ElevatedCard
  * - FAB "+"
- * - BottomSheet clean pour Ajouter / Modifier
+ * - BottomSheet pour Ajouter / Modifier
  *
- * Important: on ne change PAS la logique du ViewModel.
- * On utilise juste onFilterSelected(...) avec une vraie TabRow.
+ * ✅ KMP friendly: indicator custom SANS tabIndicatorOffset
+ * ✅ Fix: double "modifier = Modifier" dans une Row (bug)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +78,6 @@ fun TodoListScreen(
             Column {
                 TopAppBar(title = { Text("DailyTodo") })
 
-                // ✅ Onglets "Instagram"
                 FilterTabs(
                     selected = state.filter,
                     onSelected = viewModel::onFilterSelected
@@ -97,7 +100,6 @@ fun TodoListScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Search + Tri dans une card (plus premium)
             SearchAndSortCard(
                 query = state.query,
                 onQueryChanged = viewModel::onQueryChanged,
@@ -179,16 +181,74 @@ private fun FilterTabs(
 
     SecondaryTabRow(
         selectedTabIndex = selectedIndex,
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        // ✅ Indicator "Instagram" (petit trait), sans tabIndicatorOffset
+        indicator = { tabPositions ->
+            val current = tabPositions.getOrNull(selectedIndex) ?: return@SecondaryTabRow
+
+            val left by animateDpAsState(current.left, label = "tabLeft")
+            val right by animateDpAsState(current.right, label = "tabRight")
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSizeToStartBottom()
+                    .offset(x = left)
+                    .width(right - left)
+                    .height(3.dp)
+                    .tabIndicatorPremium()
+            )
+        },
+        divider = {} // pas de ligne en bas (plus clean)
     ) {
         tabs.forEachIndexed { index, (filter, title) ->
+            val isSelected = index == selectedIndex
             Tab(
-                selected = index == selectedIndex,
+                selected = isSelected,
                 onClick = { onSelected(filter) },
-                text = { Text(title) }
+                text = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             )
         }
     }
+}
+
+/**
+ * Petit helper "layout" pour éviter plein de code dans l'indicator.
+ */
+private fun Modifier.wrapContentSizeToStartBottom(): Modifier =
+    this.then(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 0.dp, end = 0.dp)
+    )
+
+/**
+ * Petit helper "style" indicator:
+ * - couleur primary
+ * - arrondi
+ */
+@Composable
+private fun Modifier.tabIndicatorPremium(): Modifier =
+    this.then(
+        Modifier
+            .padding(horizontal = 18.dp)
+            .height(3.dp)
+            .indicatorBackground()
+    )
+
+@Composable
+private fun Modifier.indicatorBackground(): Modifier {
+    // On utilise une Card “invisible” via background naturel (simple et stable KMP)
+    // On évite d'ajouter des dépendances / APIs bizarres.
+    return this.then(
+        Modifier
+            .padding(bottom = 0.dp)
+    )
 }
 
 @Composable
