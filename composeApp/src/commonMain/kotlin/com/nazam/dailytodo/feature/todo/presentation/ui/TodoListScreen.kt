@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -42,10 +45,13 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
- * Refonte UI:
- * - FAB "+" pour ajouter
- * - BottomSheet (popup en bas) pour ajouter / modifier
- * - Liste en cards (plus joli)
+ * UI propre:
+ * - TopBar
+ * - Search dans une Card
+ * - Chips (filtre/tri/catégories)
+ * - Liste en ElevatedCard
+ * - FAB "+"
+ * - BottomSheet clean pour Ajouter / Modifier
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +75,9 @@ fun TodoListScreen(
                     viewModel.onAddRequested()
                     isSheetOpen = true
                 }
-            ) { Text("+") }
+            ) {
+                Text("+")
+            }
         }
     ) { padding ->
         Column(
@@ -79,39 +87,26 @@ fun TodoListScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SearchBar(query = state.query, onQueryChanged = viewModel::onQueryChanged)
+            ControlsCard(
+                query = state.query,
+                onQueryChanged = viewModel::onQueryChanged,
 
-            ChoiceRow(
-                items = listOf(TodoFilter.ALL, TodoFilter.IN_PROGRESS, TodoFilter.DONE),
-                selected = state.filter,
-                label = { f ->
-                    when (f) {
-                        TodoFilter.ALL -> "Toutes"
-                        TodoFilter.IN_PROGRESS -> "En cours"
-                        TodoFilter.DONE -> "Terminées"
-                    }
-                },
-                onSelected = viewModel::onFilterSelected
-            )
+                filter = state.filter,
+                onFilterSelected = viewModel::onFilterSelected,
 
-            ChoiceRow(
-                items = listOf(TodoSort.DATE, TodoSort.TITLE),
-                selected = state.sort,
-                label = { s ->
-                    when (s) {
-                        TodoSort.DATE -> "Date"
-                        TodoSort.TITLE -> "Titre"
-                    }
-                },
-                onSelected = viewModel::onSortSelected
+                sort = state.sort,
+                onSortSelected = viewModel::onSortSelected
             )
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(items = state.visibleItems, key = { it.id }) { item ->
-                    TodoCard(
+                items(
+                    items = state.visibleItems,
+                    key = { it.id }
+                ) { item ->
+                    TodoItemCard(
                         item = item,
                         nowMillis = now,
                         onClick = {
@@ -135,16 +130,18 @@ fun TodoListScreen(
             sheetState = sheetState
         ) {
             TodoFormSheet(
+                isEditing = state.editingId != null,
                 title = state.inputTitle,
                 error = state.inputError,
                 selectedCategory = state.selectedCategory,
                 inputDueDateMillis = state.inputDueDateMillis,
-                isEditing = state.editingId != null,
                 nowMillis = now,
+
                 onTitleChanged = viewModel::onTitleChanged,
                 onCategorySelected = viewModel::onCategorySelected,
                 onAddDays = viewModel::onDueDateAddDays,
                 onClearDue = viewModel::onDueDateCleared,
+
                 onCancel = {
                     isSheetOpen = false
                     viewModel.onCancelClicked()
@@ -161,41 +158,76 @@ fun TodoListScreen(
 }
 
 @Composable
-private fun SearchBar(
+private fun ControlsCard(
     query: String,
-    onQueryChanged: (String) -> Unit
+    onQueryChanged: (String) -> Unit,
+    filter: TodoFilter,
+    onFilterSelected: (TodoFilter) -> Unit,
+    sort: TodoSort,
+    onSortSelected: (TodoSort) -> Unit
 ) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChanged,
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text("Rechercher") }
-    )
-}
-
-@Composable
-private fun <T> ChoiceRow(
-    items: List<T>,
-    selected: T,
-    label: (T) -> String,
-    onSelected: (T) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        items.forEach { item ->
-            val isSelected = item == selected
-            Button(onClick = { onSelected(item) }) {
-                Text(if (isSelected) "✓ ${label(item)}" else label(item))
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Rechercher") }
+            )
+
+            Text("Filtre", style = MaterialTheme.typography.labelLarge)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf(TodoFilter.ALL, TodoFilter.IN_PROGRESS, TodoFilter.DONE)) { f ->
+                    SelectChip(
+                        text = when (f) {
+                            TodoFilter.ALL -> "Toutes"
+                            TodoFilter.IN_PROGRESS -> "En cours"
+                            TodoFilter.DONE -> "Terminées"
+                        },
+                        selected = f == filter,
+                        onClick = { onFilterSelected(f) }
+                    )
+                }
+            }
+
+            Text("Tri", style = MaterialTheme.typography.labelLarge)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(listOf(TodoSort.DATE, TodoSort.TITLE)) { s ->
+                    SelectChip(
+                        text = when (s) {
+                            TodoSort.DATE -> "Date"
+                            TodoSort.TITLE -> "Titre"
+                        },
+                        selected = s == sort,
+                        onClick = { onSortSelected(s) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TodoCard(
+private fun SelectChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text = if (selected) "✓ $text" else text) }
+    )
+}
+
+@Composable
+private fun TodoItemCard(
     item: TodoItemUi,
     nowMillis: Long,
     onClick: () -> Unit,
@@ -205,7 +237,7 @@ private fun TodoCard(
     val due = item.dueDateMillis
     val isOverdue = due != null && !item.isDone && due < nowMillis
 
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -216,7 +248,10 @@ private fun TodoCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Checkbox(checked = item.isDone, onCheckedChange = onDoneChanged)
+            Checkbox(
+                checked = item.isDone,
+                onCheckedChange = onDoneChanged
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = item.title, style = MaterialTheme.typography.titleMedium)
@@ -232,18 +267,20 @@ private fun TodoCard(
                 }
             }
 
-            TextButton(onClick = onDeleteClick) { Text("Suppr.") }
+            TextButton(onClick = onDeleteClick) {
+                Text("Suppr.")
+            }
         }
     }
 }
 
 @Composable
 private fun TodoFormSheet(
+    isEditing: Boolean,
     title: String,
     error: String?,
     selectedCategory: TodoCategory,
     inputDueDateMillis: Long?,
-    isEditing: Boolean,
     nowMillis: Long,
     onTitleChanged: (String) -> Unit,
     onCategorySelected: (TodoCategory) -> Unit,
@@ -272,23 +309,40 @@ private fun TodoFormSheet(
         )
 
         if (error != null) {
-            Text(text = error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
-        Text("Catégorie", style = MaterialTheme.typography.titleSmall)
-        ChoiceRow(
-            items = listOf(TodoCategory.PERSONAL, TodoCategory.WORK, TodoCategory.SPORT),
-            selected = selectedCategory,
-            label = { it.label },
-            onSelected = onCategorySelected
-        )
+        Text("Catégorie", style = MaterialTheme.typography.labelLarge)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(listOf(TodoCategory.PERSONAL, TodoCategory.WORK, TodoCategory.SPORT)) { cat ->
+                SelectChip(
+                    text = cat.label,
+                    selected = cat == selectedCategory,
+                    onClick = { onCategorySelected(cat) }
+                )
+            }
+        }
 
-        Text("Date limite", style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { onAddDays(1) }) { Text("+1j") }
-            Button(onClick = { onAddDays(3) }) { Text("+3j") }
-            Button(onClick = { onAddDays(7) }) { Text("+7j") }
-            Button(onClick = onClearDue) { Text("Aucune") }
+        Text("Date limite", style = MaterialTheme.typography.labelLarge)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(listOf(1, 3, 7)) { days ->
+                SelectChip(
+                    text = "+${days}j",
+                    selected = false,
+                    onClick = { onAddDays(days) }
+                )
+            }
+            item {
+                SelectChip(
+                    text = "Aucune",
+                    selected = inputDueDateMillis == null,
+                    onClick = onClearDue
+                )
+            }
         }
 
         if (inputDueDateMillis != null) {
@@ -302,8 +356,18 @@ private fun TodoFormSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(modifier = Modifier.weight(1f), onClick = onCancel) { Text("Annuler") }
-            Button(modifier = Modifier.weight(1f), onClick = onSave) { Text("Enregistrer") }
+            TextButton(
+                modifier = Modifier.weight(1f),
+                onClick = onCancel
+            ) {
+                Text("Annuler")
+            }
+            Button(
+                modifier = Modifier.weight(1f),
+                onClick = onSave
+            ) {
+                Text("Enregistrer")
+            }
         }
     }
 }
