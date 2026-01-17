@@ -38,22 +38,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import com.nazam.dailytodo.core.time.nowMillis
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
+import com.nazam.dailytodo.ui.dimens.DailyTodoDimens
 import com.nazam.dailytodo.ui.strings.DailyTodoStrings
 import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
- * UI Premium (KMP friendly) :
+ * UI Premium++ (KMP friendly)
  * - Header premium (titre + sous-titre)
- * - Tabs style "Instagram" (barre sous l'onglet actif) => sans tabIndicatorOffset (stable)
- * - Search + Tri en Card
+ * - Tabs style "Instagram" (barre sous l'onglet actif) SANS tabIndicatorOffset (stable)
+ * - Search en "pill" + Tri en chips
  * - Liste en ElevatedCard
  * - FAB "+"
  * - BottomSheet propre pour Ajouter / Modifier
@@ -80,7 +81,7 @@ fun TodoListScreen(
             Column {
                 TopAppBar(
                     title = {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.SmallSpacing)) {
                             Text(
                                 text = DailyTodoStrings.AppName,
                                 style = MaterialTheme.typography.titleLarge
@@ -106,17 +107,18 @@ fun TodoListScreen(
                     viewModel.onAddRequested()
                     isSheetOpen = true
                 }
-            ) {
-                Text(DailyTodoStrings.FabPlus)
-            }
+            ) { Text(DailyTodoStrings.FabPlus) }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(
+                    horizontal = DailyTodoDimens.ScreenPadding,
+                    vertical = DailyTodoDimens.ScreenPaddingVertical
+                ),
+            verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
         ) {
             SearchAndSortCard(
                 query = state.query,
@@ -167,7 +169,7 @@ fun TodoListScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(DailyTodoDimens.ScreenPaddingVertical))
         }
     }
 }
@@ -182,7 +184,6 @@ private fun FilterTabs(
         TodoFilter.IN_PROGRESS to DailyTodoStrings.TabInProgress,
         TodoFilter.DONE to DailyTodoStrings.TabDone
     )
-
     val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
 
     SecondaryTabRow(
@@ -199,22 +200,24 @@ private fun FilterTabs(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(vertical = DailyTodoDimens.TabPaddingVertical),
+                    verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
                 ) {
                     Text(
                         text = title,
                         style = if (isSelected) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
                         color = if (isSelected) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     // ✅ barre "Instagram" (sans tabIndicatorOffset)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(2.dp)
-                            .clip(RoundedCornerShape(999.dp))
+                            .height(DailyTodoDimens.TabIndicatorHeight)
+                            .clip(RoundedCornerShape(DailyTodoDimens.RadiusPill))
                             .background(
                                 if (isSelected) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.surface
@@ -235,17 +238,19 @@ private fun SearchAndSortCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(DailyTodoDimens.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
         ) {
+            // ✅ Search "pill"
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChanged,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                shape = RoundedCornerShape(DailyTodoDimens.RadiusPill),
                 label = { Text(DailyTodoStrings.SearchLabel) }
             )
 
@@ -254,7 +259,7 @@ private fun SearchAndSortCard(
                 style = MaterialTheme.typography.labelLarge
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(DailyTodoDimens.ChipRowSpacing)) {
                 SortChip(
                     text = DailyTodoStrings.SortDate,
                     selected = sort == TodoSort.DATE,
@@ -293,18 +298,18 @@ private fun TodoList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.ItemSpacing)
     ) {
         items(
             items = items,
             key = { it.id }
-        ) { item ->
+        ) { todo ->
             TodoItemCard(
-                item = item,
+                item = todo,
                 nowMillis = nowMillis,
-                onClick = { onItemClick(item.id) },
-                onDoneChanged = { checked -> onDoneChanged(item.id, checked) },
-                onDeleteClick = { onDeleteClick(item.id) }
+                onClick = { onItemClick(todo.id) },
+                onDoneChanged = { checked -> onDoneChanged(todo.id, checked) },
+                onDeleteClick = { onDeleteClick(todo.id) }
             )
         }
     }
@@ -325,13 +330,13 @@ private fun TodoItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(DailyTodoDimens.RadiusCard)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(DailyTodoDimens.CardPadding),
+            horizontalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
         ) {
             Checkbox(
                 checked = item.isDone,
@@ -340,10 +345,20 @@ private fun TodoItemCard(
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.SmallSpacing)
             ) {
-                Text(text = item.title, style = MaterialTheme.typography.titleMedium)
-                Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = item.category.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f)
+                )
 
                 if (due != null) {
                     val label = buildDueLabel(nowMillis, due)
@@ -384,8 +399,8 @@ private fun TodoFormSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = DailyTodoDimens.ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
     ) {
         Text(
             text = if (isEditing) DailyTodoStrings.SheetEdit else DailyTodoStrings.SheetNew,
@@ -409,14 +424,14 @@ private fun TodoFormSheet(
         }
 
         Text(DailyTodoStrings.CategoryTitle, style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DailyTodoDimens.ChipRowSpacing)) {
             CategoryChip(TodoCategory.PERSONAL, selectedCategory, onCategorySelected)
             CategoryChip(TodoCategory.WORK, selectedCategory, onCategorySelected)
             CategoryChip(TodoCategory.SPORT, selectedCategory, onCategorySelected)
         }
 
         Text(DailyTodoStrings.DueDate, style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DailyTodoDimens.ChipRowSpacing)) {
             FilterChip(selected = false, onClick = { onAddDays(1) }, label = { Text(DailyTodoStrings.Add1d) })
             FilterChip(selected = false, onClick = { onAddDays(3) }, label = { Text(DailyTodoStrings.Add3d) })
             FilterChip(selected = false, onClick = { onAddDays(7) }, label = { Text(DailyTodoStrings.Add7d) })
@@ -432,7 +447,7 @@ private fun TodoFormSheet(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(DailyTodoDimens.ChipRowSpacing)
         ) {
             TextButton(modifier = Modifier.weight(1f), onClick = onCancel) { Text(DailyTodoStrings.Cancel) }
             TextButton(modifier = Modifier.weight(1f), onClick = onSave) { Text(DailyTodoStrings.Save) }
