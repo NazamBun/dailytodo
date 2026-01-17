@@ -1,7 +1,9 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,10 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.nazam.dailytodo.core.time.nowMillis
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoCategory
@@ -41,13 +42,14 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
+import com.nazam.dailytodo.ui.strings.DailyTodoStrings
 import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
  * UI Premium (KMP friendly) :
  * - Header premium (titre + sous-titre)
- * - Tabs style "Instagram" (Toutes / En cours / Terminées)
+ * - Tabs style "Instagram" (barre sous l'onglet actif) => sans tabIndicatorOffset (stable)
  * - Search + Tri en Card
  * - Liste en ElevatedCard
  * - FAB "+"
@@ -77,11 +79,11 @@ fun TodoListScreen(
                     title = {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = "DailyTodo",
+                                text = DailyTodoStrings.AppName,
                                 style = MaterialTheme.typography.titleLarge
                             )
                             Text(
-                                text = "Organise ta journée",
+                                text = DailyTodoStrings.Subtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f)
                             )
@@ -89,7 +91,6 @@ fun TodoListScreen(
                     }
                 )
 
-                // ✅ Tabs "Instagram"
                 FilterTabs(
                     selected = state.filter,
                     onSelected = viewModel::onFilterSelected
@@ -102,7 +103,7 @@ fun TodoListScreen(
                     viewModel.onAddRequested()
                     isSheetOpen = true
                 }
-            ) { Text("+") }
+            ) { Text(DailyTodoStrings.FabPlus) }
         }
     ) { padding ->
         Column(
@@ -119,23 +120,16 @@ fun TodoListScreen(
                 onSortSelected = viewModel::onSortSelected
             )
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(items = state.visibleItems, key = { it.id }) { item ->
-                    TodoItemCard(
-                        item = item,
-                        nowMillis = now,
-                        onClick = {
-                            viewModel.onEditRequested(item.id)
-                            isSheetOpen = true
-                        },
-                        onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) },
-                        onDeleteClick = { viewModel.onDeleteClicked(item.id) }
-                    )
-                }
-            }
+            TodoList(
+                items = state.visibleItems,
+                nowMillis = now,
+                onItemClick = { id ->
+                    viewModel.onEditRequested(id)
+                    isSheetOpen = true
+                },
+                onDoneChanged = { id, checked -> viewModel.onDoneToggled(id, checked) },
+                onDeleteClick = { id -> viewModel.onDeleteClicked(id) }
+            )
         }
     }
 
@@ -179,9 +173,9 @@ private fun FilterTabs(
     onSelected: (TodoFilter) -> Unit
 ) {
     val tabs = listOf(
-        TodoFilter.ALL to "Toutes",
-        TodoFilter.IN_PROGRESS to "En cours",
-        TodoFilter.DONE to "Terminées"
+        TodoFilter.ALL to DailyTodoStrings.TabAll,
+        TodoFilter.IN_PROGRESS to DailyTodoStrings.TabInProgress,
+        TodoFilter.DONE to DailyTodoStrings.TabDone
     )
 
     val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
@@ -191,11 +185,37 @@ private fun FilterTabs(
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         tabs.forEachIndexed { index, (filter, title) ->
+            val isSelected = index == selectedIndex
+
             Tab(
-                selected = index == selectedIndex,
-                onClick = { onSelected(filter) },
-                text = { Text(title) }
-            )
+                selected = isSelected,
+                onClick = { onSelected(filter) }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = if (isSelected) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
+                    )
+
+                    // ✅ barre "Instagram" (sans tabIndicatorOffset)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surface
+                            )
+                    )
+                }
+            }
         }
     }
 }
@@ -207,7 +227,10 @@ private fun SearchAndSortCard(
     sort: TodoSort,
     onSortSelected: (TodoSort) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -217,19 +240,19 @@ private fun SearchAndSortCard(
                 onValueChange = onQueryChanged,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Rechercher") }
+                label = { Text(DailyTodoStrings.SearchLabel) }
             )
 
-            Text("Tri", style = MaterialTheme.typography.labelLarge)
+            Text(DailyTodoStrings.SortTitle, style = MaterialTheme.typography.labelLarge)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SortChip(
-                    text = "Date",
+                    text = DailyTodoStrings.SortDate,
                     selected = sort == TodoSort.DATE,
                     onClick = { onSortSelected(TodoSort.DATE) }
                 )
                 SortChip(
-                    text = "Titre",
+                    text = DailyTodoStrings.SortTitleAlpha,
                     selected = sort == TodoSort.TITLE,
                     onClick = { onSortSelected(TodoSort.TITLE) }
                 )
@@ -252,6 +275,30 @@ private fun SortChip(
 }
 
 @Composable
+private fun TodoList(
+    items: List<TodoItemUi>,
+    nowMillis: Long,
+    onItemClick: (String) -> Unit,
+    onDoneChanged: (String, Boolean) -> Unit,
+    onDeleteClick: (String) -> Unit
+) {
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        androidx.compose.foundation.lazy.items(items, key = { it.id }) { item ->
+            TodoItemCard(
+                item = item,
+                nowMillis = nowMillis,
+                onClick = { onItemClick(item.id) },
+                onDoneChanged = { checked -> onDoneChanged(item.id, checked) },
+                onDeleteClick = { onDeleteClick(item.id) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun TodoItemCard(
     item: TodoItemUi,
     nowMillis: Long,
@@ -265,7 +312,8 @@ private fun TodoItemCard(
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
@@ -273,26 +321,29 @@ private fun TodoItemCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Checkbox(
+            androidx.compose.material3.Checkbox(
                 checked = item.isDone,
                 onCheckedChange = onDoneChanged
             )
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(text = item.title, style = MaterialTheme.typography.titleMedium)
                 Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
 
                 if (due != null) {
                     val label = buildDueLabel(nowMillis, due)
                     Text(
-                        text = if (isOverdue) "EN RETARD • $label" else "Date limite • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label" else "${DailyTodoStrings.DueDate} • $label",
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.80f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            TextButton(onClick = onDeleteClick) { Text("Suppr.") }
+            TextButton(onClick = onDeleteClick) { Text(DailyTodoStrings.Delete) }
         }
     }
 }
@@ -323,7 +374,7 @@ private fun TodoFormSheet(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = if (isEditing) "Modifier la tâche" else "Nouvelle tâche",
+            text = if (isEditing) DailyTodoStrings.SheetEdit else DailyTodoStrings.SheetNew,
             style = MaterialTheme.typography.headlineSmall
         )
 
@@ -332,7 +383,7 @@ private fun TodoFormSheet(
             onValueChange = onTitleChanged,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text("Titre") }
+            label = { Text(DailyTodoStrings.TitleLabel) }
         )
 
         if (error != null) {
@@ -343,24 +394,24 @@ private fun TodoFormSheet(
             )
         }
 
-        Text("Catégorie", style = MaterialTheme.typography.titleSmall)
+        Text(DailyTodoStrings.CategoryTitle, style = MaterialTheme.typography.titleSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CategoryChip(TodoCategory.PERSONAL, selectedCategory, onCategorySelected)
             CategoryChip(TodoCategory.WORK, selectedCategory, onCategorySelected)
             CategoryChip(TodoCategory.SPORT, selectedCategory, onCategorySelected)
         }
 
-        Text("Date limite", style = MaterialTheme.typography.titleSmall)
+        Text(DailyTodoStrings.DueDate, style = MaterialTheme.typography.titleSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = false, onClick = { onAddDays(1) }, label = { Text("+1j") })
-            FilterChip(selected = false, onClick = { onAddDays(3) }, label = { Text("+3j") })
-            FilterChip(selected = false, onClick = { onAddDays(7) }, label = { Text("+7j") })
-            FilterChip(selected = inputDueDateMillis == null, onClick = onClearDue, label = { Text("Aucune") })
+            FilterChip(selected = false, onClick = { onAddDays(1) }, label = { Text(DailyTodoStrings.Add1d) })
+            FilterChip(selected = false, onClick = { onAddDays(3) }, label = { Text(DailyTodoStrings.Add3d) })
+            FilterChip(selected = false, onClick = { onAddDays(7) }, label = { Text(DailyTodoStrings.Add7d) })
+            FilterChip(selected = inputDueDateMillis == null, onClick = onClearDue, label = { Text(DailyTodoStrings.NoDue) })
         }
 
         if (inputDueDateMillis != null) {
             Text(
-                text = "Choisie: ${buildDueLabel(nowMillis, inputDueDateMillis)}",
+                text = "${DailyTodoStrings.DueChosen}: ${buildDueLabel(nowMillis, inputDueDateMillis)}",
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -369,8 +420,8 @@ private fun TodoFormSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextButton(modifier = Modifier.weight(1f), onClick = onCancel) { Text("Annuler") }
-            TextButton(modifier = Modifier.weight(1f), onClick = onSave) { Text("Enregistrer") }
+            TextButton(modifier = Modifier.weight(1f), onClick = onCancel) { Text(DailyTodoStrings.Cancel) }
+            TextButton(modifier = Modifier.weight(1f), onClick = onSave) { Text(DailyTodoStrings.Save) }
         }
     }
 }
