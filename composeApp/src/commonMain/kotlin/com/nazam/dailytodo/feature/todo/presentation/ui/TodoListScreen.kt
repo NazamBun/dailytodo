@@ -11,23 +11,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -47,15 +45,15 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
- * UI Premium (KMP friendly):
- * - TopAppBar (titre + sous-titre)
- * - Tabs style "Instagram" (All / En cours / Terminées)
+ * UI Premium (KMP friendly) :
+ * - Header premium (titre + sous-titre)
+ * - Tabs style "Instagram" (Toutes / En cours / Terminées)
  * - Search + Tri en Card
  * - Liste en ElevatedCard
  * - FAB "+"
- * - BottomSheet clean pour Ajouter / Modifier
+ * - BottomSheet propre pour Ajouter / Modifier
  *
- * Important: on ne change PAS la logique du ViewModel.
+ * ✅ On ne touche pas la logique du ViewModel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +75,7 @@ fun TodoListScreen(
             Column {
                 TopAppBar(
                     title = {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 text = "DailyTodo",
                                 style = MaterialTheme.typography.titleLarge
@@ -85,7 +83,7 @@ fun TodoListScreen(
                             Text(
                                 text = "Organise ta journée",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f)
                             )
                         }
                     }
@@ -104,9 +102,7 @@ fun TodoListScreen(
                     viewModel.onAddRequested()
                     isSheetOpen = true
                 }
-            ) {
-                Text("+")
-            }
+            ) { Text("+") }
         }
     ) { padding ->
         Column(
@@ -127,10 +123,7 @@ fun TodoListScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(
-                    items = state.visibleItems,
-                    key = { it.id }
-                ) { item ->
+                items(items = state.visibleItems, key = { it.id }) { item ->
                     TodoItemCard(
                         item = item,
                         nowMillis = now,
@@ -161,12 +154,10 @@ fun TodoListScreen(
                 selectedCategory = state.selectedCategory,
                 inputDueDateMillis = state.inputDueDateMillis,
                 nowMillis = now,
-
                 onTitleChanged = viewModel::onTitleChanged,
                 onCategorySelected = viewModel::onCategorySelected,
                 onAddDays = viewModel::onDueDateAddDays,
                 onClearDue = viewModel::onDueDateCleared,
-
                 onCancel = {
                     isSheetOpen = false
                     viewModel.onCancelClicked()
@@ -188,7 +179,7 @@ private fun FilterTabs(
     onSelected: (TodoFilter) -> Unit
 ) {
     val tabs = listOf(
-        TodoFilter.ALL to "All",
+        TodoFilter.ALL to "Toutes",
         TodoFilter.IN_PROGRESS to "En cours",
         TodoFilter.DONE to "Terminées"
     )
@@ -287,19 +278,15 @@ private fun TodoItemCard(
                 onCheckedChange = onDoneChanged
             )
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(text = item.title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = item.category.label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+                Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
 
                 if (due != null) {
                     val label = buildDueLabel(nowMillis, due)
                     Text(
                         text = if (isOverdue) "EN RETARD • $label" else "Date limite • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -310,6 +297,10 @@ private fun TodoItemCard(
     }
 }
 
+/**
+ * BottomSheet (formulaire)
+ * - Simple, lisible, et compatible KMP
+ */
 @Composable
 private fun TodoFormSheet(
     isEditing: Boolean,
@@ -336,7 +327,6 @@ private fun TodoFormSheet(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // ✅ FIX: une seule fois "label"
         OutlinedTextField(
             value = title,
             onValueChange = onTitleChanged,
@@ -380,7 +370,7 @@ private fun TodoFormSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             TextButton(modifier = Modifier.weight(1f), onClick = onCancel) { Text("Annuler") }
-            Button(modifier = Modifier.weight(1f), onClick = onSave) { Text("Enregistrer") }
+            TextButton(modifier = Modifier.weight(1f), onClick = onSave) { Text("Enregistrer") }
         }
     }
 }
