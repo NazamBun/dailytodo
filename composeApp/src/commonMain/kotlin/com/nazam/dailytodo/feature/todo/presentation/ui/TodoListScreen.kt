@@ -22,7 +22,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -177,7 +177,7 @@ private fun FilterTabs(
 
     val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
 
-    TabRow(
+    SecondaryTabRow(
         selectedTabIndex = selectedIndex,
         containerColor = MaterialTheme.colorScheme.surface
     ) {
