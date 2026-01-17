@@ -189,7 +189,8 @@ private fun FilterTabs(
 
     SecondaryTabRow(
         selectedTabIndex = selectedIndex,
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        indicator = {}
     ) {
         tabs.forEachIndexed { index, (filter, title) ->
             val isSelected = index == selectedIndex
