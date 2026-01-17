@@ -1,5 +1,7 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
@@ -82,7 +83,7 @@ fun TodoListScreen(
 
     // ✅ Fond dégradé (comme ton image)
     val backgroundBrush = Brush.linearGradient(
-        colors = listOf(DailyTodoColors.MaterialTheme.colorScheme.primary, DailyTodoColors.MaterialTheme.colorScheme.secondary)
+        colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
     )
 
     Box(
@@ -128,7 +129,7 @@ fun TodoListScreen(
                         isSheetOpen = true
                     },
                     containerColor = Color.White,
-                    contentColor = DailyTodoColors.MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
                 ) {
                     Text(
@@ -415,7 +416,7 @@ private fun TodoItemCard(
                 Text(
                     text = item.category.label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = DailyTodoColors.MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 if (due != null) {
@@ -423,7 +424,7 @@ private fun TodoItemCard(
                     Text(
                         text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label"
                         else "${DailyTodoStrings.DueDate} • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error else DailyTodoColors.MaterialTheme.colorScheme.onSurface,
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
