@@ -276,14 +276,39 @@ private fun SearchAndSortCard(
             modifier = Modifier.padding(DailyTodoDimens.CardPadding),
             verticalArrangement = Arrangement.spacedBy(DailyTodoDimens.MediumSpacing)
         ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(DailyTodoDimens.RadiusPill),
-                label = { Text(DailyTodoStrings.SearchLabel) }
+            val searchBrush = Brush.horizontalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.secondary
+                )
             )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DailyTodoDimens.RadiusPill))
+                    .background(searchBrush)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(DailyTodoDimens.RadiusPill),
+                    label = { Text(DailyTodoStrings.SearchLabel) },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedLabelColor = Color.White.copy(alpha = 0.90f),
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.85f),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    )
+                )
+            }
 
             Text(
                 text = DailyTodoStrings.SortTitle,

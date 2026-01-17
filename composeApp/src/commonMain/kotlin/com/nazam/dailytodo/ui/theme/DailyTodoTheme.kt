@@ -1,5 +1,6 @@
 package com.nazam.dailytodo.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkMode
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -8,59 +9,55 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /**
- * Thème pro (fond clair neutre + accents bleus).
- * IMPORTANT:
- * - surfaceTint = Transparent => enlève les teintes violettes “bizarres”.
+ * Thème DailyTodo (fond neutre + accent bleu)
+ * IMPORTANT: surfaceTint = Transparent => enlève la teinte “violet/gris”
  */
-private val LightColors: ColorScheme = lightColorScheme(
-    primary = DailyTodoColors.Blue,
-    onPrimary = DailyTodoColors.White,
 
-    secondary = DailyTodoColors.BlueSoft,
+private val LightColors: ColorScheme = lightColorScheme(
+    // Accent
+    primary = DailyTodoColors.BlueStart,
+    onPrimary = DailyTodoColors.White,
+    secondary = DailyTodoColors.BlueEnd,
     onSecondary = DailyTodoColors.White,
 
-    background = DailyTodoColors.Bg,
-    onBackground = DailyTodoColors.TextPrimary,
-
-    surface = DailyTodoColors.Surface,
-    onSurface = DailyTodoColors.TextPrimary,
-
-    surfaceVariant = DailyTodoColors.Surface2,
-    onSurfaceVariant = DailyTodoColors.TextSecondary,
-
-    outline = DailyTodoColors.Outline,
-    outlineVariant = DailyTodoColors.Outline,
+    // Neutres
+    background = DailyTodoColors.Gray50,
+    onBackground = DailyTodoColors.Black,
+    surface = DailyTodoColors.White,
+    onSurface = DailyTodoColors.Black,
+    surfaceVariant = DailyTodoColors.Gray100,
+    onSurfaceVariant = DailyTodoColors.Gray700,
+    outline = DailyTodoColors.Gray200,
+    outlineVariant = DailyTodoColors.Gray200,
 
     error = DailyTodoColors.Error,
     onError = DailyTodoColors.White,
 
-    // ✅ supprime le “violet gris”
+    // ✅ enlève l'effet violet
     surfaceTint = Color.Transparent
 )
 
 private val DarkColors: ColorScheme = darkColorScheme(
-    primary = DailyTodoColors.Blue,
+    // Accent
+    primary = DailyTodoColors.BlueStart,
     onPrimary = DailyTodoColors.White,
-
-    secondary = DailyTodoColors.BlueSoft,
+    secondary = DailyTodoColors.BlueEnd,
     onSecondary = DailyTodoColors.White,
 
+    // Neutres
     background = DailyTodoColors.DarkBg,
     onBackground = DailyTodoColors.White,
-
     surface = DailyTodoColors.DarkSurface,
     onSurface = DailyTodoColors.White,
-
     surfaceVariant = DailyTodoColors.DarkSurface2,
     onSurfaceVariant = DailyTodoColors.DarkTextSecondary,
-
     outline = DailyTodoColors.DarkOutline,
     outlineVariant = DailyTodoColors.DarkOutline,
 
     error = DailyTodoColors.Error,
     onError = DailyTodoColors.White,
 
-    // ✅ supprime le “violet gris”
+    // ✅ enlève l'effet violet
     surfaceTint = Color.Transparent
 )
 
