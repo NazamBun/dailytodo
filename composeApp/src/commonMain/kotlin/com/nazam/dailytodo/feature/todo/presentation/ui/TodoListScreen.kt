@@ -470,6 +470,33 @@ private fun CategoryChip(
     )
 }
 
+@Composable
+private fun CategoryBadge(
+    category: TodoCategory
+) {
+    val (bg, fg) = when (category) {
+        TodoCategory.PERSONAL ->
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) to MaterialTheme.colorScheme.primary
+
+        TodoCategory.WORK ->
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f) to MaterialTheme.colorScheme.secondary
+
+        TodoCategory.SPORT ->
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) to MaterialTheme.colorScheme.primary
+    }
+
+    FilterChip(
+        selected = true,
+        onClick = {},
+        label = { Text(category.label) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = bg,
+            selectedLabelColor = fg
+        ),
+        border = null
+    )
+}
+
 private fun buildDueLabel(now: Long, due: Long): String {
     val diff = due - now
     val dayMs = 24.0 * 60.0 * 60.0 * 1000.0
