@@ -35,4 +35,7 @@ object DailyTodoStrings {
     const val Cancel = "Annuler"
     const val Save = "Enregistrer"
     const val FabPlus = "+"
+
+    // ✅ Erreurs
+    const val ErrorTitleRequired = "Le titre est obligatoire"
 }

@@ -140,7 +140,7 @@ class TodoListViewModel : ViewModel() {
     fun onSaveClicked(): Boolean {
         val title = _uiState.value.inputTitle.trim()
         if (title.isBlank()) {
-            updateState(_uiState.value.copy(inputError = "Le titre est obligatoire"))
+            updateState(_uiState.value.copy(inputError = com.nazam.dailytodo.ui.strings.DailyTodoStrings.ErrorTitleRequired))
             return false
         }
 

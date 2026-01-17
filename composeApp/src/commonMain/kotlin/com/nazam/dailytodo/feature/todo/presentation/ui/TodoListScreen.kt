@@ -1,8 +1,6 @@
 package com.nazam.dailytodo.feature.todo.presentation.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,8 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -66,7 +67,7 @@ fun TodoListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // "now" une seule fois (perf)
+    // ✅ "now" une seule fois (perf)
     val now = nowMillis()
 
     // BottomSheet open/close
@@ -105,7 +106,9 @@ fun TodoListScreen(
                     viewModel.onAddRequested()
                     isSheetOpen = true
                 }
-            ) { Text(DailyTodoStrings.FabPlus) }
+            ) {
+                Text(DailyTodoStrings.FabPlus)
+            }
         }
     ) { padding ->
         Column(
@@ -202,7 +205,8 @@ private fun FilterTabs(
                     Text(
                         text = title,
                         style = if (isSelected) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
                     )
 
                     // ✅ barre "Instagram" (sans tabIndicatorOffset)
@@ -245,7 +249,10 @@ private fun SearchAndSortCard(
                 label = { Text(DailyTodoStrings.SearchLabel) }
             )
 
-            Text(DailyTodoStrings.SortTitle, style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = DailyTodoStrings.SortTitle,
+                style = MaterialTheme.typography.labelLarge
+            )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SortChip(
@@ -326,7 +333,7 @@ private fun TodoItemCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            androidx.compose.material3.Checkbox(
+            Checkbox(
                 checked = item.isDone,
                 onCheckedChange = onDoneChanged
             )
@@ -341,8 +348,10 @@ private fun TodoItemCard(
                 if (due != null) {
                     val label = buildDueLabel(nowMillis, due)
                     Text(
-                        text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label" else "${DailyTodoStrings.DueDate} • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.80f),
+                        text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label"
+                        else "${DailyTodoStrings.DueDate} • $label",
+                        color = if (isOverdue) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.80f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
