@@ -25,11 +25,15 @@ import com.nazam.dailytodo.feature.todo.presentation.model.TodoFilter
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoItemUi
 import com.nazam.dailytodo.feature.todo.presentation.model.TodoSort
 import com.nazam.dailytodo.feature.todo.presentation.viewmodel.TodoListViewModel
-import kotlin.math.ceil
 import kotlin.math.abs
+import kotlin.math.ceil
 
 /**
  * Etape 10: Date limite + alerte visuelle ("en retard")
+ *
+ * Factorisation:
+ * - ChoiceRow réutilisable (filtre / tri / catégories)
+ * - nowMillis() calculé une seule fois (meilleure perf)
  */
 @Composable
 fun TodoListScreen(
@@ -37,6 +41,9 @@ fun TodoListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val isEditing = state.editingId != null
+
+    // ✅ "now" une seule fois pour tout l'écran
+    val now = nowMillis()
 
     Column(
         modifier = Modifier
@@ -86,6 +93,7 @@ fun TodoListScreen(
         DueDateRow(
             isEditing = isEditing,
             inputDueDateMillis = state.inputDueDateMillis,
+            nowMillis = now,
             onAddDays = viewModel::onDueDateAddDays,
             onClear = viewModel::onDueDateCleared
         )
@@ -103,6 +111,7 @@ fun TodoListScreen(
             items(items = state.visibleItems, key = { it.id }) { item ->
                 TodoRow(
                     item = item,
+                    nowMillis = now,
                     onRowClick = { viewModel.onTodoClicked(item.id) },
                     onDoneChanged = { checked -> viewModel.onDoneToggled(item.id, checked) },
                     onDeleteClick = { viewModel.onDeleteClicked(item.id) }
@@ -157,6 +166,7 @@ private fun SearchBar(
 private fun DueDateRow(
     isEditing: Boolean,
     inputDueDateMillis: Long?,
+    nowMillis: Long,
     onAddDays: (Int) -> Unit,
     onClear: () -> Unit
 ) {
@@ -177,9 +187,8 @@ private fun DueDateRow(
         }
 
         if (inputDueDateMillis != null) {
-            val now = nowMillis()
             Text(
-                text = "Choisie: ${buildDueLabel(now, inputDueDateMillis)}",
+                text = "Choisie: ${buildDueLabel(nowMillis, inputDueDateMillis)}",
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -241,13 +250,13 @@ private fun TodoInputSection(
 @Composable
 private fun TodoRow(
     item: TodoItemUi,
+    nowMillis: Long,
     onRowClick: () -> Unit,
     onDoneChanged: (Boolean) -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    val now = nowMillis()
     val due = item.dueDateMillis
-    val isOverdue = due != null && !item.isDone && due < now
+    val isOverdue = due != null && !item.isDone && due < nowMillis
 
     Row(
         modifier = Modifier
@@ -262,7 +271,7 @@ private fun TodoRow(
             Text(text = item.category.label, style = MaterialTheme.typography.bodySmall)
 
             if (due != null) {
-                val label = buildDueLabel(now, due)
+                val label = buildDueLabel(nowMillis, due)
                 Text(
                     text = if (isOverdue) "EN RETARD • $label" else "Date limite • $label",
                     color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
