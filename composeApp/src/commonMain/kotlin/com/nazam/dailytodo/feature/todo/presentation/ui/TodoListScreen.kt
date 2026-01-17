@@ -82,7 +82,7 @@ fun TodoListScreen(
 
     // ✅ Fond dégradé (comme ton image)
     val backgroundBrush = Brush.linearGradient(
-        colors = listOf(DailyTodoColors.GradientStart, DailyTodoColors.GradientEnd)
+        colors = listOf(DailyTodoColors.MaterialTheme.colorScheme.primary, DailyTodoColors.MaterialTheme.colorScheme.secondary)
     )
 
     Box(
@@ -128,7 +128,7 @@ fun TodoListScreen(
                         isSheetOpen = true
                     },
                     containerColor = Color.White,
-                    contentColor = DailyTodoColors.Primary,
+                    contentColor = DailyTodoColors.MaterialTheme.colorScheme.primary,
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
                 ) {
                     Text(
@@ -415,7 +415,7 @@ private fun TodoItemCard(
                 Text(
                     text = item.category.label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = DailyTodoColors.TextSecondary
+                    color = DailyTodoColors.MaterialTheme.colorScheme.onSurface
                 )
 
                 if (due != null) {
@@ -423,7 +423,7 @@ private fun TodoItemCard(
                     Text(
                         text = if (isOverdue) "${DailyTodoStrings.Overdue} • $label"
                         else "${DailyTodoStrings.DueDate} • $label",
-                        color = if (isOverdue) MaterialTheme.colorScheme.error else DailyTodoColors.TextSecondary,
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else DailyTodoColors.MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
