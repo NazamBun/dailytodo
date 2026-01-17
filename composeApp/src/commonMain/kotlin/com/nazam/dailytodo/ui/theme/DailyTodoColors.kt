@@ -3,32 +3,26 @@ package com.nazam.dailytodo.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palette 3 (énergie douce) - DailyTodo
- *
- * Idée:
- * - Violet doux = couleur principale
- * - Rose clair = accent
- * - Fond très clair = confortable pour les yeux
- *
- * On garde les couleurs dans un seul endroit pour rester "clean" et factorisé.
+ * Palette NOIR PREMIUM
+ * Style pro / productivité / SaaS
  */
 object DailyTodoColors {
 
-    // Brand
-    val Primary = Color(0xFF6C63FF)        // Violet doux
-    val Secondary = Color(0xFFFF8FAB)      // Rose clair
+    // Accent
+    val Primary = Color(0xFF3B82F6)      // Bleu premium
+    val Secondary = Color(0xFF64748B)    // Gris élégant
 
-    // Background / Surface
-    val Background = Color(0xFFF5F5F7)     // Gris très clair
-    val Surface = Color(0xFFFFFFFF)        // Blanc
+    // Backgrounds
+    val Background = Color(0xFF0B0F14)   // Noir profond
+    val Surface = Color(0xFF111827)      // Cartes / sheets
 
     // Text
-    val OnPrimary = Color(0xFFFFFFFF)      // Texte sur le violet
-    val OnSecondary = Color(0xFF1F1F1F)    // Texte sur le rose
-    val OnBackground = Color(0xFF1F1F1F)   // Texte principal
-    val OnSurface = Color(0xFF1F1F1F)
+    val OnPrimary = Color(0xFFFFFFFF)
+    val OnSecondary = Color(0xFFE5E7EB)
+    val OnBackground = Color(0xFFE5E7EB)
+    val OnSurface = Color(0xFFE5E7EB)
 
     // Status
-    val Error = Color(0xFFE94B3C)          // Rouge doux
+    val Error = Color(0xFFEF4444)
     val OnError = Color(0xFFFFFFFF)
 }
