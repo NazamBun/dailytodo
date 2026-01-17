@@ -3,26 +3,28 @@ package com.nazam.dailytodo.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palette NOIR PREMIUM
- * Style pro / productivité / SaaS
+ * Palette MONOCHROME STRICT
+ * Noir / Gris / Blanc uniquement
  */
 object DailyTodoColors {
 
-    // Accent
-    val Primary = Color(0xFF3B82F6)      // Bleu premium
-    val Secondary = Color(0xFF64748B)    // Gris élégant
+    // Base
+    val Black = Color(0xFF0B0F14)
+    val White = Color(0xFFFFFFFF)
 
-    // Backgrounds
-    val Background = Color(0xFF0B0F14)   // Noir profond
-    val Surface = Color(0xFF111827)      // Cartes / sheets
+    // Grays (light)
+    val Gray50 = Color(0xFFF7F7F8)
+    val Gray100 = Color(0xFFF0F1F3)
+    val Gray200 = Color(0xFFE4E6EA)
+    val Gray300 = Color(0xFFD1D5DB)
+    val Gray700 = Color(0xFF374151)
 
-    // Text
-    val OnPrimary = Color(0xFFFFFFFF)
-    val OnSecondary = Color(0xFFE5E7EB)
-    val OnBackground = Color(0xFFE5E7EB)
-    val OnSurface = Color(0xFFE5E7EB)
+    // Dark surfaces
+    val DarkBg = Color(0xFF0B0F14)
+    val DarkSurface = Color(0xFF111827)
+    val DarkSurface2 = Color(0xFF161F2D)
+    val DarkOutline = Color(0xFF2A3445)
 
-    // Status
-    val Error = Color(0xFFEF4444)
-    val OnError = Color(0xFFFFFFFF)
+    // Error (rouge pro)
+    val Error = Color(0xFFB91C1C)
 }

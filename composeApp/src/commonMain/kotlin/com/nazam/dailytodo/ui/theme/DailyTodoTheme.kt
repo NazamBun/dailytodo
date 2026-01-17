@@ -5,53 +5,72 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.isSystemInDarkMode
 import androidx.compose.ui.graphics.Color
 
 /**
- * Thème DailyTodo (KMP friendly)
- *
- * - Light + Dark
- * - Mode sombre détecté automatiquement (Android + iOS)
+ * Thème DailyTodo (Monochrome strict)
+ * => Noir / Gris / Blanc uniquement
+ * => IMPORTANT: surfaceTint = Transparent (supprime l'effet violet/lavande)
  */
 private val LightColorScheme: ColorScheme = lightColorScheme(
-    primary = DailyTodoColors.Primary,
-    onPrimary = DailyTodoColors.OnPrimary,
+    primary = DailyTodoColors.Black,
+    onPrimary = DailyTodoColors.White,
 
-    secondary = DailyTodoColors.Secondary,
-    onSecondary = DailyTodoColors.OnSecondary,
+    secondary = DailyTodoColors.Black,
+    onSecondary = DailyTodoColors.White,
 
-    background = DailyTodoColors.Background,
-    onBackground = DailyTodoColors.OnBackground,
+    tertiary = DailyTodoColors.Black,
+    onTertiary = DailyTodoColors.White,
 
-    surface = DailyTodoColors.Surface,
-    onSurface = DailyTodoColors.OnSurface,
+    background = DailyTodoColors.Gray50,
+    onBackground = DailyTodoColors.Black,
+
+    surface = DailyTodoColors.White,
+    onSurface = DailyTodoColors.Black,
+
+    surfaceVariant = DailyTodoColors.Gray100,
+    onSurfaceVariant = DailyTodoColors.Gray700,
+
+    outline = DailyTodoColors.Gray200,
+    outlineVariant = DailyTodoColors.Gray200,
 
     error = DailyTodoColors.Error,
-    onError = DailyTodoColors.OnError
+    onError = DailyTodoColors.White,
+
+    // ✅ C’EST ÇA QUI ENLÈVE LE “VIOLET GRIS”
+    surfaceTint = Color.Transparent
 )
 
 private val DarkColorScheme: ColorScheme = darkColorScheme(
-    // On garde l'identité (violet/rose) mais avec des fonds sombres.
-    primary = DailyTodoColors.Primary,
-    onPrimary = DailyTodoColors.OnPrimary,
+    primary = DailyTodoColors.White,
+    onPrimary = DailyTodoColors.Black,
 
-    secondary = DailyTodoColors.Secondary,
-    onSecondary = DailyTodoColors.OnSecondary,
+    secondary = DailyTodoColors.White,
+    onSecondary = DailyTodoColors.Black,
 
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFF2F2F2),
+    tertiary = DailyTodoColors.White,
+    onTertiary = DailyTodoColors.Black,
 
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFF2F2F2),
+    background = DailyTodoColors.DarkBg,
+    onBackground = DailyTodoColors.White,
+
+    surface = DailyTodoColors.DarkSurface,
+    onSurface = DailyTodoColors.White,
+
+    surfaceVariant = DailyTodoColors.DarkSurface2,
+    onSurfaceVariant = DailyTodoColors.Gray300,
+
+    outline = DailyTodoColors.DarkOutline,
+    outlineVariant = DailyTodoColors.DarkOutline,
 
     error = DailyTodoColors.Error,
-    onError = DailyTodoColors.OnError
+    onError = DailyTodoColors.White,
+
+    // ✅ enlève la teinte “magenta/violet”
+    surfaceTint = Color.Transparent
 )
 
-/**
- * Point d'entrée du thème.
- * Le mode sombre est choisi automatiquement.
- */
 @Composable
 fun DailyTodoTheme(
     content: @Composable () -> Unit
